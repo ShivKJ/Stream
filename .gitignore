@@ -5,6 +5,7 @@
 *.log
 *.json
 *#*
+*.class
 *.sql
 *.txt
 *.pdf
