@@ -1,4 +1,4 @@
-from math import sin, cos
+from math import sin, cos, tan
 
 print('Hello, World')
 
@@ -10,3 +10,4 @@ print(x - 1)
 print(sin(x))
 print(cos(x))
 print('x', x)
+print(tan(x))
