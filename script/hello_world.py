@@ -1,4 +1,4 @@
-from math import sin, cos, tan, exp
+from math import sin, cos, tan, exp, log2
 
 print('Hello, World')
 
@@ -15,3 +15,4 @@ print('---------------')
 print(exp(x))
 print('SJSJSJSJS')
 print('aftering merging')
+print(log2(x))
