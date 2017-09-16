@@ -3,6 +3,7 @@
 
 *.csv
 *.log
+*.log.*
 *.json
 *#*
 *.class
@@ -20,3 +21,4 @@
 exp/
 
 basic.egg-info/
+build/
