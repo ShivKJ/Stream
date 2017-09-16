@@ -3,6 +3,7 @@
 
 *.csv
 *.log
+*.log.*
 *.json
 *#*
 *.class
