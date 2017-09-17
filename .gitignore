@@ -22,3 +22,6 @@ exp/
 
 basic.egg-info/
 build/
+
+.gitmodules
+sub-mod/
