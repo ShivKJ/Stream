@@ -2,7 +2,14 @@ from functools import wraps
 from inspect import FullArgSpec, getfullargspec
 
 
+class VarArgPresent(Exception):
+    pass
+
+
 def __same_name_as_constructor(ins: FullArgSpec, *args, **kwargs):
+    if ins.varargs is not None:
+        raise VarArgPresent('variable argument is present.')
+
     pos_args_names = ins.args
 
     obj_dict = {}
