@@ -1,14 +1,13 @@
-from inspect import getfullargspec
+from functools import wraps
+from inspect import FullArgSpec, getfullargspec
 
 
-def update_with_values_and_constructor_arg_name(obj: object, *args, **kwargs):
-    ins = getfullargspec(obj.__init__)
+def __same_name_as_constructor(ins: FullArgSpec, *args, **kwargs):
     pos_args_names = ins.args
 
+    obj_dict = {}
     for k, v in zip(pos_args_names[1:len(args) + 1], args):
-        setattr(obj, k, v)
-
-    obj_dict = obj.__dict__
+        obj_dict[k] = v
 
     if ins.defaults:
         # when key_only args are not present.(* is not used)
@@ -18,3 +17,15 @@ def update_with_values_and_constructor_arg_name(obj: object, *args, **kwargs):
     else:
         obj_dict.update(ins.kwonlydefaults)
         obj_dict.update(**kwargs)
+
+    return obj_dict
+
+
+def constructor_setter(__init__):
+    @wraps(__init__)
+    def f(self, *args, **kwargs):
+        ins = getfullargspec(__init__)
+        self.__dict__.update(__same_name_as_constructor(ins, *args, **kwargs))
+        __init__(self, *args, **kwargs)
+
+    return f
