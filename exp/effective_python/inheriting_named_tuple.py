@@ -25,15 +25,3 @@ class A:
 
 a = A(10, e='shiv', f='jaiswal')
 print(a.__dict__)
-
-
-class B:
-    pass
-
-
-class C(B):
-    pass
-
-
-print(B.mro())
-print(B.__subclasses__())
