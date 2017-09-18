@@ -18,10 +18,15 @@
 *.pyc
 
 *config*
-exp/
 
 basic.egg-info/
 build/
 
 .gitmodules
 sub-mod/
+
+*~
+
+
+# any exp directory
+./**/exp/
