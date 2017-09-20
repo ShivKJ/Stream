@@ -19,7 +19,7 @@ def __same_name_as_constructor(ins: FullArgSpec, *args, **kwargs):
     if ins.defaults:
         key_args_names = ins.args[-len(ins.defaults):]
         obj_dict.update(dict(zip(key_args_names, ins.defaults)))
-    else:
+    elif ins.kwonlydefaults is not None:
         # when key_only args are also used (* is used)
         obj_dict.update(ins.kwonlydefaults)
 
