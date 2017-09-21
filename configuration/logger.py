@@ -2,8 +2,8 @@ from logging import getLogger, Formatter, StreamHandler
 from logging.handlers import RotatingFileHandler
 from sys import stdout
 
-from configuration.config import LOG_FORMAT, LOG_FILE, DEFAULT_LOG_LEVEL, \
-    RF_HANDLER_LEVEL, LOG_FILE_SIZE, BACKUP_COUNT, STREAM_HANDLER_LEVLE
+from configuration.config import (LOG_FORMAT, LOG_FILE, DEFAULT_LOG_LEVEL,
+    RF_HANDLER_LEVEL, LOG_FILE_SIZE, BACKUP_COUNT, STREAM_HANDLER_LEVLE)
 
 
 def initialize_logger(logger_name):
