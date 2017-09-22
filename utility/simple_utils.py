@@ -17,7 +17,7 @@ def load_obj(file_name):
         return load(f)
 
 
-class SQL:
+class DB:
     @constructor_setter
     def __init__(self, *, dbname, user, password, host='localhost', port=5432):
         pass
