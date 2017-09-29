@@ -12,10 +12,11 @@
 *.sql
 *.txt
 *.pdf
-
+*.zip
+*.tar
 *.jpeg
 *.jpg
-
+MANIFEST
 
 *.pyc
 
@@ -34,3 +35,6 @@ sub-mod/
 **/exp/
 
 ds/
+dist/
+
+
