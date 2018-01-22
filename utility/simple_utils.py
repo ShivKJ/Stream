@@ -17,18 +17,6 @@ def load_obj(file_name):
         return load(f)
 
 
-class DB:
-    @constructor_setter
-    def __init__(self, *, dbname, user, password, host='localhost', port=5432):
-        pass
-
-    @property
-    def dict_conn(self) -> DictConnection:
-        return connect(connection_factory=DictConnection, **self.__dict__)
-
-    @property
-    def conn(self) -> connection:
-        return connect(**self.__dict__)
 
 
 def filter_transform(l: list, filt, transform):
