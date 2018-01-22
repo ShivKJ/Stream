@@ -4,7 +4,7 @@ from sys import stdout
 
 from configuration.config import (LOG_FORMAT, LOG_FILE)
 from configuration.constants import (BACKUP_COUNT, DEFAULT_LOG_LEVEL, LOG_FILE_SIZE, RF_HANDLER_LEVEL,
-                                     STREAM_HANDLER_LEVLE)
+                                     STREAM_HANDLER_LEVEL)
 
 
 def initialize_logger(logger_name):
@@ -23,7 +23,7 @@ def initialize_logger(logger_name):
     # -----------------Adding Stream Handler-----------------
     sh = StreamHandler(stdout)
     sh.setFormatter(fmt)
-    sh.setLevel(STREAM_HANDLER_LEVLE)
+    sh.setLevel(STREAM_HANDLER_LEVEL)
     logger.addHandler(sh)
 
     return logger
