@@ -20,8 +20,7 @@ MANIFEST
 
 *.pyc
 
-*config*
-
+configuration/config.py
 basic.egg-info/
 build/
 
