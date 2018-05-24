@@ -1,12 +1,69 @@
 import json
 from csv import DictReader
 from datetime import date, datetime, timedelta
-from functools import partial
+from functools import partial, wraps
+from inspect import FullArgSpec, getfullargspec
 from itertools import chain
 from os import walk
 from os.path import abspath, join
 
 from dateutil.parser import parse
+from psycopg2 import connect
+from psycopg2.extensions import connection
+from psycopg2.extras import DictConnection
+
+
+class DB:
+    def __init__(self, *, dbname, user, password, host='localhost', port=5432):
+        self.dbname = dbname
+        self.user = user
+        self.password = password
+        self.host = host
+        self.port = port
+
+    @property
+    def dict_conn(self) -> connection:
+        return connect(**self.__dict__, connection_factory=DictConnection)
+
+    @property
+    def conn(self) -> connection:
+        return connect(**self.__dict__)
+
+
+class VarArgPresent(Exception):
+    pass
+
+
+def __same_name_as_constructor(ins: FullArgSpec, *args, **kwargs):
+    if ins.varargs is not None:
+        raise VarArgPresent('variable argument is present.')
+
+    pos_args_names = ins.args
+
+    obj_dict = {}
+
+    obj_dict.update(zip(pos_args_names[1:len(args) + 1], args))
+
+    if ins.defaults is not None:
+        key_args_names = ins.args[-len(ins.defaults):]
+        obj_dict.update(dict(zip(key_args_names, ins.defaults)))
+
+    if ins.kwonlydefaults is not None:
+        # when key_only args are also used (* is used)
+        obj_dict.update(ins.kwonlydefaults)
+
+    obj_dict.update(**kwargs)  # now overriding with given kwargs
+    return obj_dict
+
+
+def constructor_setter(__init__):
+    @wraps(__init__)
+    def f(self, *args, **kwargs):
+        ins = getfullargspec(__init__)
+        self.__dict__.update(__same_name_as_constructor(ins, *args, **kwargs))
+        __init__(self, *args, **kwargs)
+
+    return f
 
 
 def files_inside_dir(dir_name, match=lambda x: True,
@@ -120,3 +177,9 @@ def csv_itr(file: str) -> dict:
         reader = DictReader(f)
         for doc in reader:
             yield doc
+
+
+def filter_transform(l: list, condition, transform):
+    for item in l:
+        if condition(item):
+            yield transform(item)
