@@ -13,6 +13,8 @@ from psycopg2.extensions import connection
 from psycopg2.extras import DictConnection
 
 
+# -----------------------------------------------------
+
 class DB:
     def __init__(self, *, dbname, user, password, host='localhost', port=5432):
         self.dbname = dbname
@@ -30,6 +32,7 @@ class DB:
         return connect(**self.__dict__)
 
 
+# -----------------------------------------------------
 class VarArgPresent(Exception):
     pass
 
@@ -66,6 +69,8 @@ def constructor_setter(__init__):
     return f
 
 
+# -----------------------------------------------------
+
 def files_inside_dir(dir_name, match=lambda x: True,
                      mapper=lambda x: x,
                      as_itr=False, sort_key=False):
@@ -95,6 +100,31 @@ def files_inside_dir(dir_name, match=lambda x: True,
     return it
 
 
+def get_file_name(file_name: str, at=-1) -> str:
+    return file_name.split('/')[at].split('.')[0]
+
+
+def json_load(file: str):
+    with open(file) as f:
+        return json.load(f)
+
+
+def json_dump(obj, file: str, indent: int = None, default_cast=None,
+              sort_keys=False, cls=None):
+    with open(file, 'w') as f:
+        json.dump(obj, f, indent=indent,
+                  default=default_cast, sort_keys=sort_keys,
+                  cls=cls)
+
+
+def csv_itr(file: str) -> dict:
+    with open(file) as f:
+        reader = DictReader(f)
+        for doc in reader:
+            yield doc
+
+
+# -----------------------------------------------------
 def as_date(date_) -> date:
     '''
     cast date_ to date object.
@@ -139,6 +169,8 @@ def date_generator(start_date, end_date, include_end=True, days=1):
         start_date += td
 
 
+# -----------------------------------------------------
+
 def divide_in_chunk(docs: list, chunk_size):
     '''
     divides list of elements in fixed size of chunks.
@@ -153,30 +185,6 @@ def divide_in_chunk(docs: list, chunk_size):
     else:
         for i in range(0, len(docs), chunk_size):
             yield docs[i:i + chunk_size]
-
-
-def get_file_name(file_name: str, at=-1) -> str:
-    return file_name.split('/')[at].split('.')[0]
-
-
-def json_load(file: str):
-    with open(file) as f:
-        return json.load(f)
-
-
-def json_dump(obj, file: str, indent: int = None, default_cast=None,
-              sort_keys=False, cls=None):
-    with open(file, 'w') as f:
-        json.dump(obj, f, indent=indent,
-                  default=default_cast, sort_keys=sort_keys,
-                  cls=cls)
-
-
-def csv_itr(file: str) -> dict:
-    with open(file) as f:
-        reader = DictReader(f)
-        for doc in reader:
-            yield doc
 
 
 def filter_transform(l: list, condition, transform):
