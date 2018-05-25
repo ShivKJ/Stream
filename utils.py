@@ -4,13 +4,19 @@ from datetime import date, datetime, timedelta
 from functools import partial, wraps
 from inspect import FullArgSpec, getfullargspec
 from itertools import chain
+from logging import getLogger
 from os import walk
 from os.path import abspath, join
+from time import time
 
 from dateutil.parser import parse
 from psycopg2 import connect
 from psycopg2.extensions import connection
 from psycopg2.extras import DictConnection
+
+from configuration.constants import LOGGER_NAME
+
+logger = getLogger(LOGGER_NAME)
 
 
 # -----------------------------------------------------
@@ -65,6 +71,24 @@ def constructor_setter(__init__):
         ins = getfullargspec(__init__)
         self.__dict__.update(__same_name_as_constructor(ins, *args, **kwargs))
         __init__(self, *args, **kwargs)
+
+    return f
+
+
+def execution_time(func):
+    '''
+    finds time taken to execute a function.
+    Function should not be recursive
+    :param func:
+    :return:
+    '''
+
+    @wraps(func)
+    def f(*args, **kwargs):
+        start_time = time()
+        output = func(*args, **kwargs)
+        logger.info('time taken to execute %s: %s', func.__name__, time() - start_time)
+        return output
 
     return f
 

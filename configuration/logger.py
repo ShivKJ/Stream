@@ -4,7 +4,7 @@ from sys import stdout
 
 from configuration.config import (LOG_FORMAT, LOG_FILE)
 from configuration.constants import (BACKUP_COUNT, DEFAULT_LOG_LEVEL, LOG_FILE_SIZE, RF_HANDLER_LEVEL,
-                                     STREAM_HANDLER_LEVEL)
+                                     STREAM_HANDLER_LEVEL, LOGGER_NAME)
 
 
 def initialize_logger(logger_name):
@@ -29,4 +29,4 @@ def initialize_logger(logger_name):
     return logger
 
 
-logger = initialize_logger(__name__)
+logger = initialize_logger(LOGGER_NAME)
