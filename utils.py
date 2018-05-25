@@ -73,7 +73,7 @@ def constructor_setter(__init__):
 
 def files_inside_dir(dir_name, match=lambda x: True,
                      mapper=lambda x: x,
-                     as_itr=False, sort_key=False):
+                     as_itr=False):
     """
     recursively finds all files inside dir and in its subdir recursively
     :param dir_name: top level dir
@@ -93,9 +93,6 @@ def files_inside_dir(dir_name, match=lambda x: True,
 
     if not as_itr:
         it = list(it)
-
-        if sort_key is not False:
-            it.sort(key=sort_key)
 
     return it
 
