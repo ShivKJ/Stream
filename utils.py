@@ -87,7 +87,8 @@ def execution_time(func):
     def f(*args, **kwargs):
         start_time = time()
         output = func(*args, **kwargs)
-        logger.info('time taken to execute %s: %s', func.__name__, time() - start_time)
+        logger.info('time taken to execute %s: %0.3f seconds',
+                    func.__name__, time() - start_time)
         return output
 
     return f
