@@ -190,7 +190,7 @@ def json_dump(obj, file: str, indent: int = None, default_cast=None,
                   cls=cls)
 
 
-def csv_itr(file: str) -> Dict[str, str]:
+def csv_itr(file: str) -> Iterable[Dict[str, str]]:
     '''
     returns a generator from reading csv file.
     Each row is returned as dictionary.
@@ -223,7 +223,7 @@ def as_date(date_) -> date:
     return date_
 
 
-def date_generator(start_date, end_date, include_end=True, interval=1) -> date:
+def date_generator(start_date, end_date, include_end=True, interval=1) -> Iterable[date]:
     '''
     generates dates between start and end date (both inclusive)
     :param start_date:
@@ -251,7 +251,7 @@ def date_generator(start_date, end_date, include_end=True, interval=1) -> date:
 
 # -----------------------------------------------------
 
-def divide_in_chunk(docs: Sequence[T], chunk_size) -> Sequence[T]:
+def divide_in_chunk(docs: Sequence[T], chunk_size) -> Iterable[Sequence[T]]:
     '''
     divides list of elements in fixed size of chunks.
     Last chunk can have elements less than chunk_size.
@@ -291,7 +291,8 @@ def get_functions_clazz(module: str) -> Sequence[str]:
 
     def predicate(o: tuple) -> bool:
         n, m = o
-        return getmodule(m) is module and not n.startswith('_') and (isclass(m) or isfunction(m))
+        return (getmodule(m) is module and not n.startswith('_')
+                and (isclass(m) or isfunction(m)))
 
     return tuple(map(itemgetter(0), filter(predicate, getmembers(module))))
 
