@@ -57,12 +57,12 @@ class Stream(Generic[T]):
     @_check_stream
     def min(self, comp=None) -> T:
         self.close()
-        return min(self.pointer, key=comp)
+        return min(self.pointer, key=comp) if comp else min(self.pointer)
 
     @_check_stream
     def max(self, comp=None) -> T:
         self.close()
-        return max(self.pointer, key=comp)
+        return max(self.pointer, key=comp) if comp else max(self.pointer)
 
     @_check_stream
     def sort(self, comp=None) -> 'Stream[T]':
