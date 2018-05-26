@@ -14,12 +14,13 @@ from psycopg2 import connect
 from psycopg2.extensions import connection
 from psycopg2.extras import DictConnection
 
-from configuration.constants import LOGGER_NAME
+from utility.logger import LOGGER_NAME
 
 logger = getLogger(LOGGER_NAME)
 
 
 # -----------------------------------------------------
+
 
 class DB:
     def __init__(self, *, dbname, user, password, host='localhost', port=5432):
@@ -213,3 +214,23 @@ def filter_transform(l: list, condition, transform):
     for item in l:
         if condition(item):
             yield transform(item)
+
+
+# ------------ importing function defined only in this module-------------
+
+
+def _get_functions_clazz(module=__name__) -> tuple:
+    from importlib import import_module
+    from inspect import getmembers, getmodule, isfunction, isclass
+    from operator import itemgetter
+
+    module = import_module(module)
+
+    def predicate(o: tuple) -> bool:
+        n, m = o
+        return getmodule(m) is module and not n.startswith('_') and (isclass(m) or isfunction(m))
+
+    return tuple(map(itemgetter(0), filter(predicate, getmembers(module))))
+
+
+__all__ = _get_functions_clazz()

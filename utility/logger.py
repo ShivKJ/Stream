@@ -1,10 +1,16 @@
-from logging import getLogger, Formatter, StreamHandler
+from logging import getLogger, Formatter, StreamHandler, INFO, DEBUG
 from logging.handlers import RotatingFileHandler
 from sys import stdout
 
-from configuration.config import (LOG_FORMAT, LOG_FILE)
-from configuration.constants import (BACKUP_COUNT, DEFAULT_LOG_LEVEL, LOG_FILE_SIZE, RF_HANDLER_LEVEL,
-                                     STREAM_HANDLER_LEVEL, LOGGER_NAME)
+from utility.config import LOG_FORMAT, LOG_FILE
+
+DEFAULT_LOG_LEVEL = INFO
+RF_HANDLER_LEVEL = INFO
+STREAM_HANDLER_LEVEL = DEBUG
+LOG_FILE_SIZE = 1024 * 1024 * 8
+BACKUP_COUNT = 5
+
+LOGGER_NAME = 'BASICS'
 
 
 def initialize_logger(logger_name):
