@@ -4,7 +4,7 @@ setup(
     name='basic',
     version='1.0',
     packages=['utility'],
-    url='https://bitbucket.org/ShivKJ/learninggit',
+    url='https://bitbucket.org/ShivKJ/basics/',
     license='SKJ',
     author='Shiv',
     author_email='None@gmail.com',
