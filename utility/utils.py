@@ -119,6 +119,7 @@ def execution_time(func, logger_name: str = None):
     finds time taken to execute a function.
     Function should not be recursive
     :param func:
+    :param logger_name:
     :return:
     """
 
