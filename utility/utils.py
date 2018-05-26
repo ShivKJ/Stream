@@ -14,8 +14,6 @@ from psycopg2 import connect
 from psycopg2.extensions import connection
 from psycopg2.extras import DictConnection
 
-from utility.logger import LOGGER_NAME
-
 T = TypeVar('T')
 
 
@@ -26,6 +24,8 @@ class DB:
     '''
     This class provide functionality to create connection object.
     This is helpful in case mulitple object is to made for same credential
+
+    The underline database used is Postgresql
     '''
 
     def __init__(self, *, dbname, user, password, host='localhost', port=5432):
@@ -114,7 +114,7 @@ def constructor_setter(__init__):
     return f
 
 
-def execution_time(func, logger_name: str = LOGGER_NAME):
+def execution_time(func, logger_name: str = None):
     '''
     finds time taken to execute a function.
     Function should not be recursive
@@ -122,10 +122,15 @@ def execution_time(func, logger_name: str = LOGGER_NAME):
     :return:
     '''
 
+    if logger_name is None:
+        from utility.logger import LOGGER_NAME
+        logger_name = LOGGER_NAME
+
     @wraps(func)
     def f(*args, **kwargs):
         start_time = time()
         output = func(*args, **kwargs)
+
         getLogger(logger_name).info('time taken to execute %s: %0.3f seconds',
                                     func.__name__, time() - start_time)
         return output

@@ -20,7 +20,6 @@ MANIFEST
 
 *.pyc
 
-utility/config.py
 basic.egg-info/
 build/
 
@@ -29,9 +28,6 @@ sub-mod/
 
 *~
 
-
-# any exp directory
-**/exp/
 
 dist/
 

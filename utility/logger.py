@@ -1,8 +1,16 @@
+from datetime import date
 from logging import getLogger, Formatter, StreamHandler, INFO, DEBUG
 from logging.handlers import RotatingFileHandler
 from sys import stdout
 
-from utility.config import LOG_FORMAT, LOG_FILE
+try:
+    from utility.config import LOG_FILE
+except ImportError:
+    LOG_FILE = str(date.today()) + '.log'
+    print('Log File is not set in utility.config.py . '
+          'Using {} as log file'.format(LOG_FILE))
+
+LOG_FORMAT = '%(asctime)s %(levelname)s [%(filename)s] [%(lineno)d] %(message)s'
 
 DEFAULT_LOG_LEVEL = INFO
 RF_HANDLER_LEVEL = INFO
@@ -35,4 +43,4 @@ def initialize_logger(logger_name):
     return logger
 
 
-logger = initialize_logger(LOGGER_NAME)
+initialize_logger(LOGGER_NAME)
