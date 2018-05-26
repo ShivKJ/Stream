@@ -21,12 +21,12 @@ T = TypeVar('T')
 
 
 class DB:
-    '''
+    """
     This class provide functionality to create connection object.
     This is helpful in case mulitple object is to made for same credential
 
     The underline database used is Postgresql
-    '''
+    """
 
     def __init__(self, *, dbname, user, password, host='localhost', port=5432):
         self.dbname = dbname
@@ -72,7 +72,7 @@ def _same_name_as_constructor(ins: FullArgSpec, *args, **kwargs):
 
 
 def constructor_setter(__init__):
-    '''
+    """
     This decorator sets objects attribute name same as defined in its constructor.
     kwargs keys also contribute to object attribute along with key only args.
 
@@ -103,7 +103,7 @@ def constructor_setter(__init__):
 
     :param __init__:
     :return:
-    '''
+    """
 
     @wraps(__init__)
     def f(self, *args, **kwargs):
@@ -115,12 +115,12 @@ def constructor_setter(__init__):
 
 
 def execution_time(func, logger_name: str = None):
-    '''
+    """
     finds time taken to execute a function.
     Function should not be recursive
     :param func:
     :return:
-    '''
+    """
 
     if logger_name is None:
         from utility.logger import LOGGER_NAME
@@ -181,21 +181,21 @@ def files_inside_dir(dir_name: str, match=_always_true,
 
 
 def get_file_name(file_name: str, at=-1) -> str:
-    '''
+    """
     Extracts fileName from a file
     :param file_name:
     :param at: fetch name after splitting files on '/'
     :return:
-    '''
+    """
     return file_name.split('/')[at].split('.')[0]
 
 
 def json_load(file: str):
-    '''
+    """
     loads json file.
     :param file:
     :return: loaded json file as dict/list
-    '''
+    """
 
     with open(file) as f:
         return json.load(f)
@@ -203,7 +203,7 @@ def json_load(file: str):
 
 def json_dump(obj, file: str, indent: int = None, default_cast=None,
               sort_keys=False, cls=None):
-    '''
+    """
     dumps obj in json file.
     :param obj:
     :param file:
@@ -211,7 +211,7 @@ def json_dump(obj, file: str, indent: int = None, default_cast=None,
     :param default_cast:
     :param sort_keys:
     :param cls:
-    '''
+    """
     with open(file, 'w') as f:
         json.dump(obj, f, indent=indent,
                   default=default_cast, sort_keys=sort_keys,
@@ -219,13 +219,13 @@ def json_dump(obj, file: str, indent: int = None, default_cast=None,
 
 
 def csv_itr(file: str) -> Iterable[Dict[str, str]]:
-    '''
+    """
     returns a generator from reading csv file.
     Each row is returned as dictionary.
 
     :param file:
     :return: row of csv
-    '''
+    """
     with open(file) as f:
         reader = DictReader(f)
         for doc in reader:
@@ -234,12 +234,12 @@ def csv_itr(file: str) -> Iterable[Dict[str, str]]:
 
 # -----------------------------------------------------
 def as_date(date_) -> date:
-    '''
+    """
     cast date_ to date object.
 
     :param date_:
     :return: date object from "date_"
-    '''
+    """
     if isinstance(date_, str):
         date_ = parse(date_)
 
@@ -252,14 +252,14 @@ def as_date(date_) -> date:
 
 
 def date_generator(start_date, end_date, include_end=True, interval=1) -> Iterable[date]:
-    '''
+    """
     generates dates between start and end date (both inclusive)
     :param start_date:
     :param end_date:
     :param include_end:
     :param interval:
     :return:
-    '''
+    """
 
     start_date = as_date(start_date)
     end_date = as_date(end_date)
@@ -281,14 +281,14 @@ def date_generator(start_date, end_date, include_end=True, interval=1) -> Iterab
 # -----------------------------------------------------
 
 def divide_in_chunk(docs: Sequence[T], chunk_size) -> Iterable[Sequence[T]]:
-    '''
+    """
     divides list of elements in fixed size of chunks.
     Last chunk can have elements less than chunk_size.
 
     :param docs: list of elements
     :param chunk_size:
     :return: iterator
-    '''
+    """
     if len(docs) <= chunk_size:
         yield docs
     else:
@@ -297,13 +297,13 @@ def divide_in_chunk(docs: Sequence[T], chunk_size) -> Iterable[Sequence[T]]:
 
 
 def filter_transform(data_stream: Iterable[T], condition, transform) -> Iterable[T]:
-    '''
+    """
     given a list filters elements and transform filtered element
     :param data_stream:
     :param condition:
     :param transform:
     :return:
-    '''
+    """
 
     return map(transform, filter(condition, data_stream))
 
