@@ -78,6 +78,29 @@ def constructor_setter(__init__):
 
     In case, variable argument is present in constructor, Exception VarArgPresent is thrown.
 
+    Example 1:
+
+    class Foo:
+        @constructor_setter
+        def __init__(self, a, b, **kwargs):
+            pass
+
+    kwargs = dict(p=3, q=4)
+
+    foo = Foo(10,20, **kwargs)
+    print(foo.a, foo.b, foo.p, foo.q)
+
+    Example 2:
+
+    class Foo:
+        @constructor_setter
+        def __init__(self, a, *, e, **kwargs):
+            pass
+
+    foo = Foo(1, e=2)
+
+    print(foo.a, foo.e)
+
     :param __init__:
     :return:
     '''
