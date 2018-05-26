@@ -160,7 +160,7 @@ def _always_true(f: str) -> bool:
     return True
 
 
-def _identity(f: str) -> str:
+def _identity(f: T) -> T:
     return f
 
 
@@ -328,7 +328,7 @@ def filter_transform(data_stream: Iterable[T], condition, transform) -> Iterable
 # ------------ importing function defined only in this module-------------
 
 
-def _get_functions_clazz(module_name: str, script_path: str) -> tuple:
+def get_functions_clazz(module_name: str, script_path: str) -> tuple:
     """
     returns collection of function and class in a module not starting with '_'
     :param module_name: __name__
@@ -350,4 +350,4 @@ def _get_functions_clazz(module_name: str, script_path: str) -> tuple:
 
 
 if __name__ == 'utility.utils':
-    __all__ = _get_functions_clazz(__name__, __file__)
+    __all__ = get_functions_clazz(__name__, __file__)
