@@ -127,13 +127,15 @@ def execution_time(func, logger_name: str = None):
         from utility.logger import LOGGER_NAME
         logger_name = LOGGER_NAME
 
+    logger = getLogger(logger_name)
+
     @wraps(func)
     def f(*args, **kwargs):
         start_time = time()
         output = func(*args, **kwargs)
 
-        getLogger(logger_name).info('time taken to execute %s: %0.3f seconds',
-                                    func.__name__, time() - start_time)
+        logger.info('time taken to execute %s: %0.3f seconds',
+                    func.__name__, time() - start_time)
         return output
 
     return f
