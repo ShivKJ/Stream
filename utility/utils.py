@@ -268,9 +268,9 @@ def date_generator(start_date, end_date, include_end=True, interval=1) -> Iterab
     end_date = as_date(end_date)
 
     if include_end:
-        assert start_date <= end_date
+        assert start_date <= end_date, 'start date must be less than or equal to end_date'
     else:
-        assert start_date < end_date
+        assert start_date < end_date, 'start date must be less than end_date'
         end_date -= timedelta(days=1)
 
     td = timedelta(days=interval)
