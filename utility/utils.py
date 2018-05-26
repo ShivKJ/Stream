@@ -256,6 +256,7 @@ def date_generator(start_date, end_date, include_end=True, interval=1) -> Iterab
     generates dates between start and end date (both inclusive)
     :param start_date:
     :param end_date:
+    :param include_end:
     :param interval:
     :return:
     '''
