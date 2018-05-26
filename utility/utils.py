@@ -219,7 +219,7 @@ def filter_transform(l: list, condition, transform):
 # ------------ importing function defined only in this module-------------
 
 
-def _get_functions_clazz(module=__name__) -> tuple:
+def get_functions_clazz(module=__name__) -> tuple:
     from importlib import import_module
     from inspect import getmembers, getmodule, isfunction, isclass
     from operator import itemgetter
@@ -233,4 +233,5 @@ def _get_functions_clazz(module=__name__) -> tuple:
     return tuple(map(itemgetter(0), filter(predicate, getmembers(module))))
 
 
-__all__ = _get_functions_clazz()
+if __name__ == 'utility.utils':
+    __all__ = get_functions_clazz('utility.utils')
