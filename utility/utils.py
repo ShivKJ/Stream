@@ -328,25 +328,26 @@ def filter_transform(data_stream: Iterable[T], condition, transform) -> Iterable
 # ------------ importing function defined only in this module-------------
 
 
-def get_functions_clazz(module: str) -> Sequence[str]:
+def _get_functions_clazz(module_name: str, script_path: str) -> tuple:
     """
     returns collection of function and class in a module not starting with '_'
-    :param module:
+    :param module_name: __name__
+    :param script_path:__file__
     :return:
     """
-    from importlib import import_module
     from inspect import getmembers, getmodule, isfunction, isclass
     from operator import itemgetter
+    from importlib import import_module
 
-    module = import_module(module)
+    module = import_module(module_name, script_path)
 
     def predicate(o: tuple) -> bool:
         n, m = o
         return (getmodule(m) is module and not n.startswith('_')
                 and (isclass(m) or isfunction(m)))
 
-    return tuple(map(itemgetter(0), filter(predicate, getmembers(module))))
+    return tuple(filter_transform(getmembers(module), predicate, itemgetter(0)))
 
 
 if __name__ == 'utility.utils':
-    __all__ = get_functions_clazz(__name__)
+    __all__ = _get_functions_clazz(__name__, __file__)
