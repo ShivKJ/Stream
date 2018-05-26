@@ -54,69 +54,78 @@ class VarArgPresent(Exception):
     pass
 
 
-def _same_name_as_constructor(ins: FullArgSpec, *args, **kwargs):
-    if ins.varargs is not None:
-        raise VarArgPresent('variable argument is present.')
+def constructor_setter(throw_var_args_exception=True):
+    def _same_name_as_constructor(ins: FullArgSpec, *args, **kwargs) -> dict:
+        """
+        Finds attributes to be set in object
+        :param ins:
+        :param args:
+        :param kwargs:
+        :return: dictionary of keys as attr name and values as attr value.
+        """
+        if throw_var_args_exception and ins.varargs is not None:
+            raise VarArgPresent('variable argument is present.')
 
-    pos_args_names = ins.args
+        pos_args_names = ins.args
 
-    obj_dict = {}
+        obj_dict = {}
 
-    obj_dict.update(zip(pos_args_names[1:len(args) + 1], args))
+        obj_dict.update(zip(pos_args_names[1:len(args) + 1], args))
 
-    if ins.defaults is not None:
-        key_args_names = ins.args[-len(ins.defaults):]
-        obj_dict.update(zip(key_args_names, ins.defaults))
+        if ins.defaults is not None:
+            key_args_names = ins.args[-len(ins.defaults):]
+            obj_dict.update(zip(key_args_names, ins.defaults))
 
-    if ins.kwonlydefaults is not None:
-        # when key_only args are also used (* is used)
-        obj_dict.update(ins.kwonlydefaults)
+        if ins.kwonlydefaults is not None:
+            # when key_only args are also used (* is used)
+            obj_dict.update(ins.kwonlydefaults)
 
-    obj_dict.update(**kwargs)  # now overriding with given kwargs
-    return obj_dict
+        obj_dict.update(**kwargs)  # now overriding with given kwargs
+        return obj_dict
 
+    def _constructor_setter(__init__):
+        """
+        This decorator sets objects attribute name same as defined in its constructor.
+        kwargs keys also contribute to object attribute along with key only args.
 
-def constructor_setter(__init__):
-    """
-    This decorator sets objects attribute name same as defined in its constructor.
-    kwargs keys also contribute to object attribute along with key only args.
+        In case, variable argument is present in constructor, Exception VarArgPresent is thrown.
 
-    In case, variable argument is present in constructor, Exception VarArgPresent is thrown.
+        Example 1:
 
-    Example 1:
+        class Foo:
+            @constructor_setter(throw_var_args_exception=True)
+            def __init__(self, a, b, **kwargs):
+                pass
 
-    class Foo:
-        @constructor_setter
-        def __init__(self, a, b, **kwargs):
-            pass
+        kwargs = dict(p=3, q=4)
 
-    kwargs = dict(p=3, q=4)
+        foo = Foo(10,20, **kwargs)
+        print(foo.a, foo.b, foo.p, foo.q)
 
-    foo = Foo(10,20, **kwargs)
-    print(foo.a, foo.b, foo.p, foo.q)
+        Example 2:
 
-    Example 2:
+        class Foo:
+            @constructor_setter(throw_var_args_exception=True)
+            def __init__(self, a, *, e, **kwargs):
+                pass
 
-    class Foo:
-        @constructor_setter
-        def __init__(self, a, *, e, **kwargs):
-            pass
+        foo = Foo(1, e=2)
 
-    foo = Foo(1, e=2)
+        print(foo.a, foo.e)
 
-    print(foo.a, foo.e)
+        :param __init__:
+        :return:
+        """
 
-    :param __init__:
-    :return:
-    """
+        @wraps(__init__)
+        def f(self, *args, **kwargs):
+            ins = getfullargspec(__init__)
+            self.__dict__.update(_same_name_as_constructor(ins, *args, **kwargs))
+            __init__(self, *args, **kwargs)
 
-    @wraps(__init__)
-    def f(self, *args, **kwargs):
-        ins = getfullargspec(__init__)
-        self.__dict__.update(_same_name_as_constructor(ins, *args, **kwargs))
-        __init__(self, *args, **kwargs)
+        return f
 
-    return f
+    return _constructor_setter
 
 
 def execution_time(func, logger_name: str = None):
