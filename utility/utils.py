@@ -329,6 +329,11 @@ def filter_transform(data_stream: Iterable[T], condition, transform) -> Iterable
 
 
 def get_functions_clazz(module: str) -> Sequence[str]:
+    """
+    returns collection of function and class in a module not starting with '_'
+    :param module:
+    :return:
+    """
     from importlib import import_module
     from inspect import getmembers, getmodule, isfunction, isclass
     from operator import itemgetter
