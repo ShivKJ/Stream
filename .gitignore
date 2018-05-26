@@ -33,9 +33,5 @@ sub-mod/
 # any exp directory
 **/exp/
 
-ds/
 dist/
 
-
-db_instance.py
-example/
