@@ -7,7 +7,7 @@ from logging import getLogger
 from os import walk
 from os.path import abspath, join
 from time import time
-from typing import Iterable, Sequence, TypeVar, Dict
+from typing import Iterable, Sequence, TypeVar, Dict, Tuple
 
 from dateutil.parser import parse
 from psycopg2 import connect
@@ -43,8 +43,13 @@ class DB:
     def conn(self) -> connection:
         return connect(**self.__dict__)
 
+    @property
+    def url(self) -> Tuple[str, str]:
+        return 'psql -U {user} -d {dbname} -h {host} -p {port}'.format(**self.__dict__), self.password
 
-# -----------------------------------------------------
+    # -----------------------------------------------------
+
+
 class VarArgPresent(Exception):
     pass
 
