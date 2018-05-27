@@ -18,8 +18,8 @@ def _check_closed(is_closed: bool):
 
 def _check_stream(func):
     @wraps(func)
-    def f(self, *args, **kwargs):
-        _check_closed(self._close)
+    def f(self: 'Stream', *args, **kwargs):
+        _check_closed(self.closed)
         return func(self, *args, **kwargs)
 
     return f
@@ -27,9 +27,9 @@ def _check_stream(func):
 
 def _close_stream(func):
     @wraps(func)
-    def f(self, *args, **kwargs):
+    def f(self: 'Stream', *args, **kwargs):
         out = func(self, *args, **kwargs)
-        self._close = True
+        self.closed = True
         return out
 
     return f
@@ -40,6 +40,14 @@ class Stream(Generic[T]):
     def __init__(self, data: Iterable[T]):
         self._pointer = data
         self._close = False
+
+    @property
+    def closed(self) -> bool:
+        return self._close
+
+    @closed.setter
+    def closed(self, is_close: bool):
+        self._close = is_close
 
     @_check_stream
     def map(self, func) -> 'Stream[T]':
