@@ -176,8 +176,7 @@ class Stream(Generic[T]):
     @_check_stream
     @_close_stream
     def __iter__(self) -> Iterable[T]:
-        for elem in self._pointer:
-            yield elem
+        return iter(self._pointer)
 
     @_check_stream
     @_close_stream
@@ -215,7 +214,7 @@ class Stream(Generic[T]):
 
     @_check_stream
     @_close_stream
-    def reduce(self, initial_point: T, bi_func) -> Optional[T]:
+    def reduce(self, initial_point: T, bi_func) -> T:
 
         for g in self._pointer:
             initial_point = bi_func(initial_point, g)
