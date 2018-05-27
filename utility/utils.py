@@ -4,6 +4,7 @@ from datetime import date, datetime, timedelta
 from functools import partial, wraps
 from inspect import FullArgSpec, getfullargspec
 from logging import getLogger
+from operator import itemgetter
 from os import walk
 from os.path import abspath, join
 from time import time
@@ -340,7 +341,7 @@ def date_generator(start_date, end_date, include_end=True, interval=1) -> Iterab
 
 # -----------------------------------------------------
 
-def divide_in_chunk(docs: Sequence[T], chunk_size) -> Iterable[Sequence[T]]:
+def divide_in_chunk(docs: Iterable[T], chunk_size) -> Iterable[Sequence[T]]:
     """
     divides list of elements in fixed size of chunks.
     Last chunk can have elements less than chunk_size.
@@ -349,11 +350,16 @@ def divide_in_chunk(docs: Sequence[T], chunk_size) -> Iterable[Sequence[T]]:
     :param chunk_size:
     :return: iterator
     """
-    if len(docs) <= chunk_size:
-        yield docs
-    else:
-        for i in range(0, len(docs), chunk_size):
-            yield docs[i:i + chunk_size]
+    docs = iter(docs)
+    chunk = _next_chunk(docs, chunk_size)
+
+    while chunk:
+        yield chunk
+        chunk = _next_chunk(docs, chunk_size)
+
+
+def _next_chunk(itr: Iterable[T], chunk_size):
+    return tuple(map(itemgetter(0), zip(itr, range(chunk_size))))
 
 
 # ------------ importing function defined only in this module-------------
@@ -367,7 +373,6 @@ def get_functions_clazz(module_name: str, script_path: str) -> tuple:
     :return:
     """
     from inspect import getmembers, getmodule, isfunction, isclass
-    from operator import itemgetter
     from importlib import import_module
 
     module = import_module(module_name, script_path)
