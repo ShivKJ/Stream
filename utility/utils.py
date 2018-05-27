@@ -225,20 +225,21 @@ def _files_inside_dir(dir_name: str, match=_always_true,
 
 
 def files_inside_dir(dir_name: str, match=_always_true,
-                     mapper=identity, as_itr=False, append_full_path=True) -> Iterable[str]:
+                     mapper=identity, as_type=list,
+                     append_full_path=True) -> Iterable[str]:
     """
     recursively finds all files inside dir and in its subdir recursively
     :param dir_name: top level dir
     :param match: criteria to select file
     :param mapper: transforming selected files
-    :param as_itr: if output is required to be iterator
+    :param as_type: if None then returns files as Iterator.
     :param append_full_path: if full path is to be given as output
-    :return: file path generator / list
+    :return: file path generator / sequence
     """
     it = _files_inside_dir(dir_name, match=match, mapper=mapper,
                            append_full_path=append_full_path)
 
-    return it if as_itr else list(it)
+    return it if as_type is None else as_type(it)
 
 
 def get_file_name(file_name: str, at=-1) -> str:
