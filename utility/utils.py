@@ -164,6 +164,18 @@ def identity(f: T) -> T:
     return f
 
 
+def filter_transform(data_stream: Iterable[T], condition, transform) -> Iterable[T]:
+    """
+    given a list filters elements and transform filtered element
+    :param data_stream:
+    :param condition:
+    :param transform:
+    :return:
+    """
+
+    return map(transform, filter(condition, data_stream))
+
+
 def _files_inside_dir(dir_name: str, match=_always_true,
                       mapper=identity) -> str:
     """
@@ -178,8 +190,7 @@ def _files_inside_dir(dir_name: str, match=_always_true,
 
     for dir_path, _, files in walk(dir_name):
         dir_joiner = partial(join, dir_path)
-        for f in map(mapper, filter(match, map(dir_joiner, files))):
-            yield f
+        yield from filter_transform(map(dir_joiner, files), match, mapper)
 
 
 def files_inside_dir(dir_name: str, match=_always_true,
@@ -244,9 +255,7 @@ def csv_itr(file: str) -> Iterable[Dict[str, str]]:
     :return: row of csv
     """
     with open(file) as f:
-        reader = DictReader(f)
-        for doc in reader:
-            yield doc
+        yield from DictReader(f)
 
 
 # -----------------------------------------------------
@@ -311,18 +320,6 @@ def divide_in_chunk(docs: Sequence[T], chunk_size) -> Iterable[Sequence[T]]:
     else:
         for i in range(0, len(docs), chunk_size):
             yield docs[i:i + chunk_size]
-
-
-def filter_transform(data_stream: Iterable[T], condition, transform) -> Iterable[T]:
-    """
-    given a list filters elements and transform filtered element
-    :param data_stream:
-    :param condition:
-    :param transform:
-    :return:
-    """
-
-    return map(transform, filter(condition, data_stream))
 
 
 # ------------ importing function defined only in this module-------------
