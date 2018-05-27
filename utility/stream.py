@@ -290,7 +290,7 @@ class Stream(Generic[T]):
     @_close_stream
     def partition(self, mapper=bool) -> Dict[bool, Sequence[T]]:
         """
-        This operation closes the stream.
+        This opeation closes the stream.
 
         Divides elements depending on mapper.
 
@@ -307,7 +307,7 @@ class Stream(Generic[T]):
     @_close_stream
     def count(self) -> int:
         """
-        This operation closes the stream.
+        This opeation closes the stream.
 
         :return: number of elements in Stream
         """
@@ -317,7 +317,7 @@ class Stream(Generic[T]):
     @_close_stream
     def min(self, comp=None) -> Optional[Any]:
         """
-        This operation closes the Stream.
+        This opeation closes the Stream.
         finds minimum element of Stream
 
         Ex:
@@ -336,7 +336,7 @@ class Stream(Generic[T]):
     @_close_stream
     def max(self, comp=None) -> Optional[Any]:
         """
-        This operation closes the Stream.
+        This opeation closes the Stream.
         finds maximum element of Stream
 
         Ex:
@@ -355,7 +355,7 @@ class Stream(Generic[T]):
     @_close_stream
     def group_by(self, key_hasher, value_mapper=identity) -> Dict[Any, Sequence[T]]:
         """
-        This operation closes the Stream.
+        This opeation closes the Stream.
         group by stream element using key_hasher.
 
         Ex1:
@@ -382,7 +382,7 @@ class Stream(Generic[T]):
     @_close_stream
     def mapping(self, key_mapper, value_mapper=identity) -> dict:
         """
-        This operation closes the Stream.
+        This opeation closes the Stream.
         creates mapping from stream element.
 
         class Student:
@@ -424,7 +424,7 @@ class Stream(Generic[T]):
     @_close_stream
     def __iter__(self) -> Iterable[T]:
         """
-        This operation closes the Stream.
+        This opeation closes the Stream.
         :return:iterator from stream
         """
         return iter(self._pointer)
@@ -433,7 +433,7 @@ class Stream(Generic[T]):
     @_close_stream
     def as_seq(self, seq_clazz=list) -> Sequence[T]:
         """
-        This operation closes the Stream.
+        This opeation closes the Stream.
         returns Stream elements as sequence, for example as list.
         :param seq_clazz:
         :return:
@@ -444,7 +444,7 @@ class Stream(Generic[T]):
     @_close_stream
     def all(self, predicate=identity) -> bool:
         """
-        This operation closes the Stream.
+        This opeation closes the Stream.
         returns True if all elements returns True. If there are no element in stream,
         returns True.
 
@@ -466,7 +466,7 @@ class Stream(Generic[T]):
     @_close_stream
     def any(self, predicate=identity) -> bool:
         """
-        This operation closes the Stream.
+        This opeation closes the Stream.
         Returns True if atleast one element are True according to given predicate.
         Consequently, empty Stream returns False.
 
@@ -488,7 +488,7 @@ class Stream(Generic[T]):
     @_close_stream
     def none_match(self, predicate=identity) -> bool:
         """
-        This operation closes the Stream.
+        This opeation closes the Stream.
         returns True if no element are true according to predicate.
         Empty stream returns True.
         Ex:
@@ -516,7 +516,7 @@ class Stream(Generic[T]):
     @_close_stream
     def find_first(self) -> Optional[Any]:
         """
-        This operation closes the Stream.
+        This opeation closes the Stream.
         finds first element from Stream.
         :return:
         """
@@ -529,7 +529,7 @@ class Stream(Generic[T]):
     @_close_stream
     def for_each(self, consumer):
         """
-        This operation closes the Stream.
+        This opeation closes the Stream.
         consumes each element from stream.
         stream = Stream(range(5))
         stream.for_each(print)
@@ -549,7 +549,7 @@ class Stream(Generic[T]):
     @_close_stream
     def reduce(self, initial_point: T, bi_func) -> T:
         """
-        This operation closes the Stream.
+        This opeation closes the Stream.
         reduces stream element to produce an element.
 
         stream = Stream(range(1,6))
