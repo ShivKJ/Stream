@@ -160,12 +160,12 @@ def _always_true(f: str) -> bool:
     return True
 
 
-def _identity(f: T) -> T:
+def identity(f: T) -> T:
     return f
 
 
 def _files_inside_dir(dir_name: str, match=_always_true,
-                      mapper=_identity) -> str:
+                      mapper=identity) -> str:
     """
     recursively finds all files inside dir and in its subdir recursively
     :param dir_name: top level dir
@@ -183,7 +183,7 @@ def _files_inside_dir(dir_name: str, match=_always_true,
 
 
 def files_inside_dir(dir_name: str, match=_always_true,
-                     mapper=_identity, as_itr=False) -> Iterable[str]:
+                     mapper=identity, as_itr=False) -> Iterable[str]:
     """
     recursively finds all files inside dir and in its subdir recursively
     :param dir_name: top level dir

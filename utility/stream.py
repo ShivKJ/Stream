@@ -2,7 +2,7 @@ from functools import wraps
 from itertools import islice
 from typing import Iterable, TypeVar, Generic, Sequence, Dict, Any
 
-from utility.utils import get_functions_clazz
+from utility.utils import get_functions_clazz, identity
 
 T = TypeVar('T')
 
@@ -20,9 +20,17 @@ def _check_stream(func):
     @wraps(func)
     def f(self, *args, **kwargs):
         _check_closed(self._close)
-        print(func.__name__, self._close)
-
         return func(self, *args, **kwargs)
+
+    return f
+
+
+def _close_stream(func):
+    @wraps(func)
+    def f(self, *args, **kwargs):
+        out = func(self, *args, **kwargs)
+        self._close = True
+        return out
 
     return f
 
@@ -30,74 +38,69 @@ def _check_stream(func):
 class Stream(Generic[T]):
 
     def __init__(self, data: Iterable[T]):
-        self.pointer = data
+        self._pointer = data
         self._close = False
-
-    def close(self):
-        self._close = True
 
     @_check_stream
     def map(self, func) -> 'Stream[T]':
-        self.pointer = map(func, self.pointer)
+        self._pointer = map(func, self._pointer)
         return self
 
     @_check_stream
     def filter(self, func) -> 'Stream[T]':
-        self.pointer = filter(func, self.pointer)
+        self._pointer = filter(func, self._pointer)
         return self
 
     @_check_stream
+    @_close_stream
     def count(self) -> int:
-
-        count = sum(1 for _ in self.pointer)
-        self.close()
-
-        return count
+        """
+        :return: number of elements in Stream
+        """
+        return sum(1 for _ in self._pointer)
 
     @_check_stream
+    @_close_stream
     def min(self, comp=None) -> T:
-        self.close()
-        return min(self.pointer, key=comp) if comp else min(self.pointer)
+        return min(self._pointer, key=comp) if comp else min(self._pointer)
 
     @_check_stream
+    @_close_stream
     def max(self, comp=None) -> T:
-        self.close()
-        return max(self.pointer, key=comp) if comp else max(self.pointer)
+        return max(self._pointer, key=comp) if comp else max(self._pointer)
 
     @_check_stream
     def sort(self, comp=None) -> 'Stream[T]':
-        self.pointer = sorted(self.pointer, key=comp)
+        self._pointer = sorted(self._pointer, key=comp)
         return self
 
     @_check_stream
     def limit(self, n) -> 'Stream[T]':
-        self.pointer = islice(self.pointer, n)
+        self._pointer = islice(self._pointer, n)
         return self
 
     @_check_stream
-    def groupBy(self, hasher) -> Dict[Any, Sequence[T]]:
+    @_close_stream
+    def groupBy(self, key_hasher, value_mapper=identity) -> Dict[Any, Sequence[T]]:
         out = {}
 
-        for elem in self.pointer:
-            Stream._update(out, hasher(elem), elem)
-
-        self.close()
+        for elem in self._pointer:
+            Stream._update(out, key_hasher(elem), value_mapper(elem))
 
         return out
 
     @_check_stream
-    def mapping(self, key_mapper, value_mapper) -> dict:
+    @_close_stream
+    def mapping(self, key_mapper, value_mapper=identity) -> dict:
         out = {}
 
-        for elem in self.pointer:
+        for elem in self._pointer:
             k = key_mapper(elem)
 
-            if out:
+            if k in out:
                 raise ValueError('key {} is already present in map'.format(k))
 
             out[k] = value_mapper(elem)
-
-        self.close()
 
         return out
 
@@ -108,18 +111,23 @@ class Stream(Generic[T]):
     @staticmethod
     def _update(d: dict, k, v):
         if k not in d:
-            d[k] = []
+            pt = []
+            d[k] = pt
+        else:
+            pt = d[k]
 
-        d[k].append(v)
+        pt.append(v)
 
     @_check_stream
+    @_close_stream
     def __iter__(self) -> Iterable[T]:
-        self.pointer = iter(self.pointer)
-
-        for elem in self.pointer:
+        for elem in self._pointer:
             yield elem
 
-        self.close()
+    @_check_stream
+    @_close_stream
+    def as_seq(self, seq_clazz=list) -> Sequence[T]:
+        return seq_clazz(self._pointer)
 
 
 if __name__ == 'utility.stream':
