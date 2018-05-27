@@ -6,9 +6,10 @@ from sys import stdout
 try:
     from utility.config import LOG_FILE
 except ImportError:
+    from warnings import warn
+
     LOG_FILE = str(date.today()) + '.log'
-    print('Log File is not set in utility.config.py . '
-          'Using {} as log file'.format(LOG_FILE))
+    warn('Log File is not set in utility.config.py . Using {} as log file'.format(LOG_FILE))
 
 LOG_FORMAT = '%(asctime)s %(levelname)s [%(filename)s] [%(lineno)d] %(message)s'
 
