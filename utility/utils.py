@@ -351,15 +351,17 @@ def divide_in_chunk(docs: Iterable[T], chunk_size) -> Iterable[Sequence[T]]:
     :return: iterator
     """
     docs = iter(docs)
-    chunk = _next_chunk(docs, chunk_size)
+    rng = range(chunk_size)
+    
+    chunk = _next_chunk(docs, rng)
 
     while chunk:
         yield chunk
-        chunk = _next_chunk(docs, chunk_size)
+        chunk = _next_chunk(docs, rng)
 
 
-def _next_chunk(itr: Iterable[T], chunk_size):
-    return tuple(map(itemgetter(0), zip(itr, range(chunk_size))))
+def _next_chunk(itr: Iterable[T], rng: range):
+    return tuple(map(itemgetter(0), zip(itr, rng)))
 
 
 # ------------ importing function defined only in this module-------------
