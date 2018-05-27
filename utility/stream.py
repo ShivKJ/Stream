@@ -79,6 +79,11 @@ class Stream(Generic[T]):
         return self
 
     @_check_stream
+    def distinct(self) -> 'Stream[T]':
+        self._pointer = set(self._pointer)
+        return self
+
+    @_check_stream
     def limit(self, n) -> 'Stream[T]':
         self._pointer = islice(self._pointer, n)
         return self

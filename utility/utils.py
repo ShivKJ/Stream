@@ -17,6 +17,140 @@ from psycopg2.extras import DictConnection
 T = TypeVar('T')
 
 
+# --------------------------- The decorators -----------------------------------
+def execution_time(func, logger_name: str = None):
+    """
+    A decorator to log execution time of function.
+
+    In case, log file path is not defined, current dir is taken for log dir.
+    :param func:
+    :param logger_name:
+    :return:
+    """
+
+    if logger_name is None:
+        from utility.logger import LOGGER_NAME
+        logger_name = LOGGER_NAME
+
+    logger = getLogger(logger_name)
+
+    @wraps(func)
+    def f(*args, **kwargs):
+        start_time = time()
+        output = func(*args, **kwargs)
+
+        logger.info('time taken to execute %s: %0.3f seconds',
+                    func.__name__, time() - start_time)
+        return output
+
+    return f
+
+
+class VarArgPresent(Exception):
+    pass
+
+
+def constructor_setter(throw_var_args_exception=True):
+    """
+    This decorator sets objects attribute name same as defined in its constructor.
+    kwargs keys also contribute to object attribute along with key only args.
+
+    In case, variable argument is present in constructor, Exception VarArgPresent is thrown.
+
+    Example 1:
+
+    class Foo:
+        @constructor_setter(throw_var_args_exception=True)
+        def __init__(self, a, b, **kwargs):
+            pass
+
+    kwargs = dict(p=3, q=4)
+
+    foo = Foo(10,20, **kwargs)
+    print(foo.a, foo.b, foo.p, foo.q)
+
+    Example 2:
+
+    class Foo:
+        @constructor_setter(throw_var_args_exception=True)
+        def __init__(self, a, *, e, **kwargs):
+            pass
+
+    foo = Foo(1, e=2)
+
+    print(foo.a, foo.e)
+
+    :param throw_var_args_exception: if exception has to be thrown in case of variable args
+    :return:
+    """
+
+    def _same_name_as_constructor(ins: FullArgSpec, *args, **kwargs) -> dict:
+        """
+        Finds attributes to be set in object
+        :param ins:
+        :param args:
+        :param kwargs:
+        :return: dictionary of keys as attr name and values as attr value.
+        """
+        if throw_var_args_exception and ins.varargs is not None:
+            raise VarArgPresent('variable argument is present.')
+
+        obj_dict = {}
+
+        if ins.defaults is not None:
+            '''
+            def foo(a, b, p=1, q=2, *, r):pass
+            
+            ins.defaults is tuple (1,2)
+            To get names, we use ins.args that is (a,b,p,q) here.
+            
+            Note that, values of p and q will be updated from kwargs if present in it.  
+            '''
+
+            key_args_names = ins.args[-len(ins.defaults):]  # picking names of default keys
+            obj_dict.update(zip(key_args_names, ins.defaults))
+
+        if ins.kwonlydefaults is not None:
+            # when key_only args which comes after '*' in function definition.
+            # It is not None which means they have default values
+            '''
+            def foo(a, b, p=1, *, q=2, r):pass
+            
+            ins.kwonlydefaults is dictionary dict(q=2).
+            
+            '''
+            obj_dict.update(ins.kwonlydefaults)
+
+        obj_dict.update(**kwargs)
+        '''
+        Now checking if kwonlyargs have been initialized.
+        
+        def foo(a, b, p=1, *, q=2, r):pass
+        here kwonlyargs is [q, r].
+        Note that we have already populated 'q' in dictionary obj_dict using ins.kwonlydefaults.
+        '''
+
+        for k in ins.kwonlyargs:
+            if k not in obj_dict:
+                raise ValueError('{} is absent in argument and it is keyonly args')
+
+        # Updating varargs in obj_dict. '1' stands for self, ignoring it.
+        obj_dict.update(zip(ins.args[1:], args))
+
+        return obj_dict
+
+    def _constructor_setter(__init__):
+        @wraps(__init__)
+        def f(self, *args, **kwargs):
+            ins = getfullargspec(__init__)
+            self.__dict__.update(_same_name_as_constructor(ins, *args, **kwargs))
+            __init__(self, *args, **kwargs)
+
+        return f
+
+    return _constructor_setter
+
+
 # -----------------------------------------------------
 
 
@@ -47,122 +181,8 @@ class DB:
     def url(self) -> Tuple[str, str]:
         return 'psql -U {user} -d {dbname} -h {host} -p {port}'.format(**self.__dict__), self.password
 
-    # -----------------------------------------------------
-
-
-class VarArgPresent(Exception):
-    pass
-
-
-def constructor_setter(throw_var_args_exception=True):
-    def _same_name_as_constructor(ins: FullArgSpec, *args, **kwargs) -> dict:
-        """
-        Finds attributes to be set in object
-        :param ins:
-        :param args:
-        :param kwargs:
-        :return: dictionary of keys as attr name and values as attr value.
-        """
-        if throw_var_args_exception and ins.varargs is not None:
-            raise VarArgPresent('variable argument is present.')
-
-        pos_args_names = ins.args
-
-        obj_dict = {}
-
-        obj_dict.update(zip(pos_args_names[1:len(args) + 1], args))
-
-        if ins.defaults is not None:
-            key_args_names = ins.args[-len(ins.defaults):]
-            obj_dict.update(zip(key_args_names, ins.defaults))
-
-        if ins.kwonlydefaults is not None:
-            # when key_only args are also used (* is used)
-            obj_dict.update(ins.kwonlydefaults)
-
-        obj_dict.update(**kwargs)  # now overriding with given kwargs
-        return obj_dict
-
-    def _constructor_setter(__init__):
-        """
-        This decorator sets objects attribute name same as defined in its constructor.
-        kwargs keys also contribute to object attribute along with key only args.
-
-        In case, variable argument is present in constructor, Exception VarArgPresent is thrown.
-
-        Example 1:
-
-        class Foo:
-            @constructor_setter(throw_var_args_exception=True)
-            def __init__(self, a, b, **kwargs):
-                pass
-
-        kwargs = dict(p=3, q=4)
-
-        foo = Foo(10,20, **kwargs)
-        print(foo.a, foo.b, foo.p, foo.q)
-
-        Example 2:
-
-        class Foo:
-            @constructor_setter(throw_var_args_exception=True)
-            def __init__(self, a, *, e, **kwargs):
-                pass
-
-        foo = Foo(1, e=2)
-
-        print(foo.a, foo.e)
-
-        :param __init__:
-        :return:
-        """
-
-        @wraps(__init__)
-        def f(self, *args, **kwargs):
-            ins = getfullargspec(__init__)
-            self.__dict__.update(_same_name_as_constructor(ins, *args, **kwargs))
-            __init__(self, *args, **kwargs)
-
-        return f
-
-    return _constructor_setter
-
-
-def execution_time(func, logger_name: str = None):
-    """
-    finds time taken to execute a function.
-    Function should not be recursive
-    :param func:
-    :param logger_name:
-    :return:
-    """
-
-    if logger_name is None:
-        from utility.logger import LOGGER_NAME
-        logger_name = LOGGER_NAME
-
-    logger = getLogger(logger_name)
-
-    @wraps(func)
-    def f(*args, **kwargs):
-        start_time = time()
-        output = func(*args, **kwargs)
-
-        logger.info('time taken to execute %s: %0.3f seconds',
-                    func.__name__, time() - start_time)
-        return output
-
-    return f
-
 
 # -----------------------------------------------------
-def _always_true(f: str) -> bool:
-    return True
-
-
-def identity(f: T) -> T:
-    return f
-
 
 def filter_transform(data_stream: Iterable[T], condition, transform) -> Iterable[T]:
     """
@@ -176,17 +196,28 @@ def filter_transform(data_stream: Iterable[T], condition, transform) -> Iterable
     return map(transform, filter(condition, data_stream))
 
 
+def _always_true(f) -> bool:
+    return True
+
+
+def identity(f: T) -> T:
+    return f
+
+
 def _files_inside_dir(dir_name: str, match=_always_true,
-                      mapper=identity) -> str:
+                      mapper=identity, append_full_path=True) -> str:
     """
-    recursively finds all files inside dir and in its subdir recursively
+    recursively finds all files inside dir and in its subdir recursively.
+    Each out file name will have complete path
     :param dir_name: top level dir
     :param match: criteria to select file
     :param mapper: transforming selected files
+    :param append_full_path: if full path is to be given as output
     :return: generator to files
     """
 
-    dir_name = abspath(dir_name)
+    if append_full_path:
+        dir_name = abspath(dir_name)
 
     for dir_path, _, files in walk(dir_name):
         dir_joiner = partial(join, dir_path)
@@ -194,16 +225,18 @@ def _files_inside_dir(dir_name: str, match=_always_true,
 
 
 def files_inside_dir(dir_name: str, match=_always_true,
-                     mapper=identity, as_itr=False) -> Iterable[str]:
+                     mapper=identity, as_itr=False, append_full_path=True) -> Iterable[str]:
     """
     recursively finds all files inside dir and in its subdir recursively
     :param dir_name: top level dir
     :param match: criteria to select file
     :param mapper: transforming selected files
     :param as_itr: if output is required to be iterator
+    :param append_full_path: if full path is to be given as output
     :return: file path generator / list
     """
-    it = _files_inside_dir(dir_name, match=match, mapper=mapper)
+    it = _files_inside_dir(dir_name, match=match, mapper=mapper,
+                           append_full_path=append_full_path)
 
     return it if as_itr else list(it)
 
