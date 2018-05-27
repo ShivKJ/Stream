@@ -1,7 +1,5 @@
-from concurrent.futures import Future
 from functools import wraps
 from itertools import islice, chain
-from os import cpu_count
 from typing import Iterable, TypeVar, Generic, Sequence, Dict, Any
 
 from utility.utils import get_functions_clazz, identity
@@ -96,6 +94,7 @@ def _close_stream(func):
 
 
 class Stream(Generic[T]):
+
     def __init__(self, data: Iterable[T]):
         self._pointer = data
         self._close = False
@@ -118,56 +117,18 @@ class Stream(Generic[T]):
         self._close = is_close
 
     @_check_stream
-    def map(self, func, worker=None, is_parallel=True) -> 'Stream[T]':
+    def map(self, func) -> 'Stream[T]':
         """
         maps elements of stream.
 
         Exp:
         stream = Stream(range(5)).map(lambda x: 2*x)
         print(list(stream)) # prints [0, 2, 4, 6, 8]
-
         :param func:
-        :param worker: number of worker to use in mapping element.
-        :param is_parallel: works only if worker is not None and not equal to 1
         :return: Stream itself
         """
-
-        if worker is not None and worker != 1:
-            self._pointer = Stream.function_wrapper(func, worker, is_parallel)(self._pointer)
-            func = Future.result
-
         self._pointer = map(func, self._pointer)
         return self
-
-    @staticmethod
-    def function_wrapper(func, worker: int, is_parallel: bool):
-        """
-        provides a wrapper around given function.
-        :param func:
-        :param worker:
-        :param is_parallel:
-        :return:
-        """
-        if is_parallel:
-            from concurrent.futures import ProcessPoolExecutor as Executor
-            if worker <= 0:
-                worker = cpu_count()
-                # in case, worker provided is less than 0, setting
-                # number of cpu_core as default number of thread.
-        else:
-            from concurrent.futures import ThreadPoolExecutor as Executor
-            if worker <= 0:
-                worker = 4
-                # in case, worker provided is less than 0, setting 4 as default
-                # number of thread.
-
-        @wraps(func)
-        def f(generator: Iterable[T]):
-            with Executor(max_workers=worker) as executor:
-                for g in generator:
-                    yield executor.submit(func, g)
-
-        return f
 
     @_check_stream
     def filter(self, func) -> 'Stream[T]':
