@@ -345,7 +345,7 @@ def divide_in_chunk(docs: Iterable[T], chunk_size) -> Iterable[Sequence[T]]:
 
     :param docs: list of elements
     :param chunk_size:
-    :return: iterator
+    :return: generator for chunks
     """
     docs = iter(docs)
     rng = range(chunk_size)
