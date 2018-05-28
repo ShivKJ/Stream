@@ -1,10 +1,8 @@
 from collections import deque
-from concurrent import futures
-from concurrent.futures import Future, as_completed
+from concurrent.futures import Future, as_completed, Executor, ProcessPoolExecutor, ThreadPoolExecutor
 from functools import wraps
 from itertools import islice, chain
-from os import cpu_count
-from typing import Iterable, TypeVar, Generic, Sequence, Dict, Any, Deque
+from typing import Iterable, TypeVar, Generic, Sequence, Dict, Any, Deque, Tuple
 
 from utility.utils import divide_in_chunk, get_functions_clazz, identity
 
@@ -115,6 +113,15 @@ class Stream(Generic[T]):
         self._close = False
 
         self._concurrent_worker: Deque[Future] = deque()
+        self._exec: Executor = None
+        self._worker: int = None
+
+    def concurrent(self, worker, is_parallel) -> 'Stream[T]':
+        self._worker = worker
+        self._exec = ProcessPoolExecutor if is_parallel else ThreadPoolExecutor
+        self._exec = self._exec(max_workers=worker)
+
+        return self
 
     @property
     def closed(self) -> bool:
@@ -134,7 +141,7 @@ class Stream(Generic[T]):
         self._close = is_close
 
     @_check_stream
-    def map(self, func, worker=None, is_parallel=True) -> 'Stream[T]':
+    def map(self, func) -> 'Stream[T]':
         """
         maps elements of stream.
 
@@ -143,52 +150,34 @@ class Stream(Generic[T]):
         print(list(stream)) # prints [0, 2, 4, 6, 8]
 
         :param func:
-        :param worker: number of worker to use in mapping element.
-        :param is_parallel: works only if worker is not None and not equal to 1
         :return: Stream itself
         """
 
-        if worker is not None and worker != 1:
-            self._pointer = self.function_wrapper(func, worker, is_parallel)(self._pointer)
+        if self._exec is not None:
+            self._pointer = self.function_wrapper(func)(self._pointer)
             func = Future.result
 
         self._pointer = map(func, self._pointer)
         return self
 
-    def function_wrapper(self, func, worker: int, is_parallel: bool):
+    def function_wrapper(self, func):
         """
         provides a wrapper around given function.
         :param func:
-        :param worker:
-        :param is_parallel:
         :return:
         """
 
-        if is_parallel:
-            Executor = futures.ProcessPoolExecutor
-            if worker <= 0:
-                worker = cpu_count()
-                # in case, worker provided is less than 0, setting
-                # number of cpu_core as default number of thread.
-        else:
-            Executor = futures.ThreadPoolExecutor
-            if worker <= 0:
-                worker = 4
-                # in case, worker provided is less than 0, setting 4 as default
-                # number of thread.
-
         @wraps(func)
         def f(generator: Iterable[T]):
-            with Executor(max_workers=worker) as executor:
-                for gs in divide_in_chunk(generator, worker):
-                    container = [executor.submit(func, g) for g in gs]
-                    self._concurrent_worker.extend(container)
-                    yield from as_completed(container)
+            for gs in divide_in_chunk(generator, self._worker):
+                container: Tuple[Future] = tuple(self._exec.submit(func, g) for g in gs)
+                self._concurrent_worker.extend(container)
+                yield from as_completed(container)
 
         return f
 
     @_check_stream
-    def filter(self, predicate, worker=None, is_parallel=True) -> 'Stream[T]':
+    def filter(self, predicate) -> 'Stream[T]':
         """
         Filters elements from Stream.
 
@@ -197,13 +186,11 @@ class Stream(Generic[T]):
         print(list(stream)) # prints [1, 3]
 
         :param predicate:
-        :param worker: number of worker to use in filtration process.
-        :param is_parallel: works only if worker is not None and not equal to 1
         :return: Stream itself
         """
 
-        if worker is not None and worker != 1:
-            self._pointer = self.function_wrapper(predicate, worker, is_parallel)(self._pointer)
+        if self._exec is not None:
+            self._pointer = self.function_wrapper(predicate)(self._pointer)
             predicate = Future.result
 
         self._pointer = filter(predicate, self._pointer)
@@ -265,8 +252,6 @@ class Stream(Generic[T]):
         :return: Stream itself
         """
         self._pointer = Stream.consumer_wrapper(consumer)(self._pointer)
-        # self._pointer = list(self._pointer)
-        # print(self._pointer.__len__())
         return self
 
     @staticmethod
