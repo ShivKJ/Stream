@@ -548,13 +548,17 @@ class ParallelStream(Stream[T]):
         self._exec: Executor = None
         self._worker: int = None
 
-    def concurrent(self, worker, is_parallel) -> 'Stream[T]':
+    def concurrent(self, worker, is_parallel) -> 'ParallelStream[T]':
+        if self._exec is not None:
+            raise AttributeError('Executor was initialized befores.')
+
         self._worker = worker
         self._exec = ProcessPoolExecutor if is_parallel else ThreadPoolExecutor
         self._exec = self._exec(max_workers=worker)
+
         return self
 
-    def map(self, func) -> 'Stream[T]':
+    def map(self, func, use_exec=True) -> 'Stream[T]':
         """
         maps elements of stream.
 
@@ -563,10 +567,11 @@ class ParallelStream(Stream[T]):
         print(list(stream)) # prints [0, 2, 4, 6, 8]
 
         :param func:
+        :param use_exec: flag to use executor. This will be used only if "concurrent" method has been invoked
         :return: Stream itself
         """
 
-        if self._exec is not None:
+        if use_exec and self._exec is not None:
             self._pointer = self._function_wrapper(func)(self._pointer)
             func = Future.result
 
@@ -589,7 +594,7 @@ class ParallelStream(Stream[T]):
         return f
 
     @_check_stream
-    def filter(self, predicate) -> 'Stream[T]':
+    def filter(self, predicate, use_exec=True) -> 'Stream[T]':
         """
         Filters elements from Stream.
 
@@ -598,10 +603,11 @@ class ParallelStream(Stream[T]):
         print(list(stream)) # prints [1, 3]
 
         :param predicate:
+        :param use_exec: flag to use executor. This will be used only if "concurrent" method has been invoked
         :return: Stream itself
         """
 
-        if self._exec is not None:
+        if use_exec and self._exec is not None:
             self._pointer = self._function_wrapper(predicate)(self._pointer)
             predicate = Future.result
 
