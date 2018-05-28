@@ -398,15 +398,6 @@ class Stream(Generic[T]):
 
     @_check_stream
     @_close_stream
-    def __iter__(self) -> Iterable[T]:
-        """
-        This opeation closes the Stream.
-        :return:iterator from stream
-        """
-        return iter(self._pointer)
-
-    @_check_stream
-    @_close_stream
     def as_seq(self, seq_clazz=list) -> Sequence[T]:
         """
         This opeation closes the Stream.
@@ -616,10 +607,11 @@ class ParallelStream(Stream[T]):
 
         return super().filter(predicate)
 
+    # terminal operation will trigger cancelling of submitted unnecessary jobs.
     partition = _cancel_remaining_jobs(Stream.partition)
+    count = _cancel_remaining_jobs(Stream.count)
     min = _cancel_remaining_jobs(Stream.min)
     max = _cancel_remaining_jobs(Stream.max)
-    count = _cancel_remaining_jobs(Stream.count)
     group_by = _cancel_remaining_jobs(Stream.group_by)
     mapping = _cancel_remaining_jobs(Stream.mapping)
     as_seq = _cancel_remaining_jobs(Stream.as_seq)
