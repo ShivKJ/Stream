@@ -131,7 +131,7 @@ class Stream(Generic[T]):
         return self
 
     @_check_stream
-    def filter(self, func) -> 'Stream[T]':
+    def filter(self, predicate) -> 'Stream[T]':
         """
         Filters elements from Stream.
 
@@ -139,10 +139,11 @@ class Stream(Generic[T]):
         stream = Stream(range(5)).filter(lambda x: x%2 == 1)
         print(list(stream)) # prints [1, 3]
 
-        :param func:
+        :param predicate:
         :return: Stream itself
         """
-        self._pointer = filter(func, self._pointer)
+
+        self._pointer = filter(predicate, self._pointer)
         return self
 
     @_check_stream

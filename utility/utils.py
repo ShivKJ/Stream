@@ -4,6 +4,7 @@ from datetime import date, datetime, timedelta
 from functools import partial, wraps
 from inspect import FullArgSpec, getfullargspec
 from logging import getLogger
+from operator import itemgetter
 from os import walk
 from os.path import abspath, join
 from time import time
@@ -205,13 +206,12 @@ def identity(f: T) -> T:
 
 
 def _files_inside_dir(dir_name: str, match=_always_true,
-                      mapper=identity, append_full_path=True) -> str:
+                      append_full_path=True) -> str:
     """
     recursively finds all files inside dir and in its subdir recursively.
     Each out file name will have complete path
     :param dir_name: top level dir
     :param match: criteria to select file
-    :param mapper: transforming selected files
     :param append_full_path: if full path is to be given as output
     :return: generator to files
     """
@@ -221,22 +221,20 @@ def _files_inside_dir(dir_name: str, match=_always_true,
 
     for dir_path, _, files in walk(dir_name):
         dir_joiner = partial(join, dir_path)
-        yield from filter_transform(map(dir_joiner, files), match, mapper)
+        yield from filter(match, map(dir_joiner, files))
 
 
 def files_inside_dir(dir_name: str, match=_always_true,
-                     mapper=identity, as_type=list,
-                     append_full_path=True) -> Iterable[str]:
+                     as_type=list, append_full_path=True) -> Iterable[str]:
     """
     recursively finds all files inside dir and in its subdir recursively
     :param dir_name: top level dir
     :param match: criteria to select file
-    :param mapper: transforming selected files
     :param as_type: if None then returns files as Iterator.
     :param append_full_path: if full path is to be given as output
     :return: file path generator / sequence
     """
-    it = _files_inside_dir(dir_name, match=match, mapper=mapper,
+    it = _files_inside_dir(dir_name, match=match,
                            append_full_path=append_full_path)
 
     return it if as_type is None else as_type(it)
@@ -340,7 +338,7 @@ def date_generator(start_date, end_date, include_end=True, interval=1) -> Iterab
 
 # -----------------------------------------------------
 
-def divide_in_chunk(docs: Sequence[T], chunk_size) -> Iterable[Sequence[T]]:
+def divide_in_chunk(docs: Iterable[T], chunk_size) -> Iterable[Sequence[T]]:
     """
     divides list of elements in fixed size of chunks.
     Last chunk can have elements less than chunk_size.
@@ -349,11 +347,18 @@ def divide_in_chunk(docs: Sequence[T], chunk_size) -> Iterable[Sequence[T]]:
     :param chunk_size:
     :return: iterator
     """
-    if len(docs) <= chunk_size:
-        yield docs
-    else:
-        for i in range(0, len(docs), chunk_size):
-            yield docs[i:i + chunk_size]
+    docs = iter(docs)
+    rng = range(chunk_size)
+
+    chunk = _next_chunk(docs, rng)
+
+    while chunk:
+        yield chunk
+        chunk = _next_chunk(docs, rng)
+
+
+def _next_chunk(itr: Iterable[T], rng: range):
+    return tuple(map(itemgetter(0), zip(itr, rng)))
 
 
 # ------------ importing function defined only in this module-------------
@@ -367,7 +372,6 @@ def get_functions_clazz(module_name: str, script_path: str) -> tuple:
     :return:
     """
     from inspect import getmembers, getmodule, isfunction, isclass
-    from operator import itemgetter
     from importlib import import_module
 
     module = import_module(module_name, script_path)
