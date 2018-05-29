@@ -358,7 +358,7 @@ def divide_in_chunk(docs: Iterable[T], chunk_size) -> Iterable[Sequence[T]]:
 
 
 def _next_chunk(itr: Iterable[T], rng: range):
-    return tuple(map(itemgetter(0), zip(rng, itr)))
+    return tuple(map(itemgetter(1), zip(rng, itr)))
 
 
 # ------------ importing function defined only in this module-------------
