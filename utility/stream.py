@@ -54,7 +54,7 @@ class StreamClosedException(Exception):
     pass
 
 
-def _check_closed(is_closed: bool):
+def _raise(is_closed: bool):
     """
     throws exception depending on is_closed
     :param is_closed:
@@ -73,7 +73,7 @@ def _check_stream(func):
 
     @wraps(func)
     def f(self: 'Stream', *args, **kwargs):
-        _check_closed(self.closed)
+        _raise(self.closed)
         return func(self, *args, **kwargs)
 
     return f
@@ -577,16 +577,21 @@ class ParallelStream(Stream[T]):
 
         return super().map(func)
 
-    def _function_wrapper(self, func):
+    def _function_wrapper(self, func, single_chunk=False):
         """
         provides a wrapper around given function.
         :param func:
+        :param single_chunk: if False, the run jobs in chunks defined as self._worker else all
+                jobs are submitted.
         :return:
         """
 
         @wraps(func)
         def f(generator: Iterable[T]):
-            for gs in divide_in_chunk(generator, self._worker):
+            if single_chunk is False:
+                generator = divide_in_chunk(generator, self._worker)
+
+            for gs in generator:
                 container: Tuple[Future] = tuple(self._exec.submit(func, g) for g in gs)
                 self._concurrent_worker.extend(container)
                 yield from as_completed(container)
@@ -625,9 +630,31 @@ class ParallelStream(Stream[T]):
     any = _cancel_remaining_jobs(Stream.any)
     none_match = _cancel_remaining_jobs(Stream.none_match)
     find_first = _cancel_remaining_jobs(Stream.find_first)
-    for_each = _cancel_remaining_jobs(Stream.for_each)
     reduce = _cancel_remaining_jobs(Stream.reduce)
     __iter__ = _cancel_remaining_jobs(Stream.__iter__)
+
+    @_cancel_remaining_jobs
+    def for_each(self, consumer, use_exec=True):
+        """
+        This opeation closes the Stream.
+        consumes each element from stream.
+        stream = Stream(range(5))
+        stream.for_each(print)
+        prints ->
+        1
+        2
+        3
+        4
+        5
+
+        :param consumer:
+        :param use_exec: True if executor has to be used.
+        """
+        if use_exec and self._exec is not None:
+            self._pointer = self._function_wrapper(consumer, single_chunk=True)(self._pointer)
+            consumer = Future.result
+
+        super().for_each(consumer)
 
 
 if __name__ == 'utility.stream':
