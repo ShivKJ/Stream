@@ -338,7 +338,7 @@ def date_generator(start_date, end_date, include_end=True, interval=1) -> Iterab
 
 # -----------------------------------------------------
 
-def divide_in_chunk(docs: Iterable[T], chunk_size) -> Iterable[Sequence[T]]:
+def divide_in_chunk(docs: Iterable[T], chunk_size: int) -> Iterable[Sequence[T]]:
     """
     divides list of elements in fixed size of chunks.
     Last chunk can have elements less than chunk_size.
