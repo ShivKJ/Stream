@@ -1,93 +1,12 @@
-from collections import deque
-from concurrent.futures import Future, Executor, ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 from functools import wraps
 from itertools import islice, chain
-from operator import itemgetter
-from typing import Iterable, TypeVar, Generic, Sequence, Dict, Any, Deque, Tuple
+from typing import Iterable, TypeVar, Generic, Sequence, Dict, Any
 
-from decorator import decorator
-
-from utility.utils import filter_transform, divide_in_chunk, get_functions_clazz, identity
+from stream.decos import check_stream, close_stream
+from stream.optional import Optional, EMPTY
+from utility.utils import get_functions_clazz, identity
 
 T = TypeVar('T')
-
-
-class Optional(Generic[T]):
-    """
-    This class wraps data. This helps avoid processing None element.
-    """
-
-    def __init__(self, data: T):
-        self.data = data
-
-    def present(self):
-        return self.data is not None
-
-    def get(self):
-        if not self.present():
-            raise ValueError('data is None')
-
-        return self.data
-
-    def if_present(self, consumer):
-        if self.present():
-            consumer(self.data)
-
-    def or_else(self, other):
-        return self.data if self.present() else other
-
-    def or_raise(self, exception: Exception):
-        if not self.present():
-            raise exception
-
-        return self.data
-
-    def __str__(self):
-        return str(self.data)
-
-
-EMPTY = Optional(None)
-
-
-class StreamClosedException(Exception):
-    """
-    Exception thrown in case Stream is closed and stream functions
-    are invoked.
-    """
-    pass
-
-
-def _raise(is_closed: bool):
-    """
-    throws exception depending on is_closed
-    :param is_closed:
-    """
-    if is_closed:
-        raise StreamClosedException()
-
-
-@decorator
-def _check_stream(func, *args, **kwargs):
-    """
-    If Stream is closed then throws an exception otherwise,
-    execute the function.
-    :param func:
-    :return:
-    """
-    _raise(args[0].closed)  # args[0] corresponds to self
-    return func(*args, **kwargs)
-
-
-@decorator
-def _close_stream(func, *args, **kwargs):
-    """
-    closes stream after executing the function.
-    :param func:
-    :return:
-    """
-    out = func(*args, **kwargs)
-    args[0].closed = True  # args[0] corresponds to self
-    return out
 
 
 class Stream(Generic[T]):
@@ -113,7 +32,7 @@ class Stream(Generic[T]):
         """
         self._close = is_close
 
-    @_check_stream
+    @check_stream
     def map(self, func) -> 'Stream[T]':
         """
         maps elements of stream.
@@ -127,7 +46,7 @@ class Stream(Generic[T]):
         self._pointer = map(func, self._pointer)
         return self
 
-    @_check_stream
+    @check_stream
     def filter(self, predicate) -> 'Stream[T]':
         """
         Filters elements from Stream.
@@ -142,7 +61,7 @@ class Stream(Generic[T]):
         self._pointer = filter(predicate, self._pointer)
         return self
 
-    @_check_stream
+    @check_stream
     def sorted(self, comp=None) -> 'Stream[T]':
         """
         Sorts element of Stream.
@@ -154,7 +73,7 @@ class Stream(Generic[T]):
         self._pointer = sorted(self._pointer, key=comp)
         return self
 
-    @_check_stream
+    @check_stream
     def distinct(self) -> 'Stream[T]':
         """
         uses distinct element of for further processing.
@@ -169,7 +88,7 @@ class Stream(Generic[T]):
         self._pointer = set(self._pointer)
         return self
 
-    @_check_stream
+    @check_stream
     def limit(self, n) -> 'Stream[T]':
         """
         limits number of element in stream
@@ -183,7 +102,7 @@ class Stream(Generic[T]):
         self._pointer = islice(self._pointer, n)
         return self
 
-    @_check_stream
+    @check_stream
     def peek(self, consumer) -> 'Stream[T]':
         """
         processes element while streaming.
@@ -216,7 +135,7 @@ class Stream(Generic[T]):
 
         return func
 
-    @_check_stream
+    @check_stream
     def skip(self, n) -> 'Stream[T]':
         """
         Skips n number of element from Stream
@@ -230,7 +149,7 @@ class Stream(Generic[T]):
         self._pointer = islice(self._pointer, n, None)
         return self
 
-    @_check_stream
+    @check_stream
     def flat_map(self) -> 'Stream[T]':
         """
         flats the stream if each element is iterable
@@ -244,8 +163,8 @@ class Stream(Generic[T]):
         self._pointer = chain.from_iterable(self._pointer)
         return self
 
-    @_check_stream
-    @_close_stream
+    @check_stream
+    @close_stream
     def partition(self, mapper=bool) -> Dict[bool, Sequence[T]]:
         """
         This opeation closes the stream.
@@ -261,8 +180,8 @@ class Stream(Generic[T]):
         """
         return self.group_by(mapper)
 
-    @_check_stream
-    @_close_stream
+    @check_stream
+    @close_stream
     def count(self) -> int:
         """
         This opeation closes the stream.
@@ -271,8 +190,8 @@ class Stream(Generic[T]):
         """
         return sum(1 for _ in self._pointer)
 
-    @_check_stream
-    @_close_stream
+    @check_stream
+    @close_stream
     def min(self, comp=None) -> Optional[Any]:
         """
         This opeation closes the Stream.
@@ -290,8 +209,8 @@ class Stream(Generic[T]):
         except ValueError:
             return EMPTY
 
-    @_check_stream
-    @_close_stream
+    @check_stream
+    @close_stream
     def max(self, comp=None) -> Optional[Any]:
         """
         This opeation closes the Stream.
@@ -309,8 +228,8 @@ class Stream(Generic[T]):
         except ValueError:
             return EMPTY
 
-    @_check_stream
-    @_close_stream
+    @check_stream
+    @close_stream
     def group_by(self, key_hasher, value_mapper=identity) -> Dict[Any, Sequence[T]]:
         """
         This opeation closes the Stream.
@@ -336,8 +255,8 @@ class Stream(Generic[T]):
 
         return out
 
-    @_check_stream
-    @_close_stream
+    @check_stream
+    @close_stream
     def mapping(self, key_mapper, value_mapper=identity) -> dict:
         """
         This opeation closes the Stream.
@@ -378,8 +297,8 @@ class Stream(Generic[T]):
 
         pt.append(v)
 
-    @_check_stream
-    @_close_stream
+    @check_stream
+    @close_stream
     def as_seq(self, seq_clazz=list) -> Sequence[T]:
         """
         This opeation closes the Stream.
@@ -389,8 +308,8 @@ class Stream(Generic[T]):
         """
         return seq_clazz(self._pointer)
 
-    @_check_stream
-    @_close_stream
+    @check_stream
+    @close_stream
     def all(self, predicate=identity) -> bool:
         """
         This opeation closes the Stream.
@@ -411,8 +330,8 @@ class Stream(Generic[T]):
         """
         return all(map(predicate, self._pointer))
 
-    @_check_stream
-    @_close_stream
+    @check_stream
+    @close_stream
     def any(self, predicate=identity) -> bool:
         """
         This opeation closes the Stream.
@@ -433,8 +352,8 @@ class Stream(Generic[T]):
         """
         return any(map(predicate, self._pointer))
 
-    @_check_stream
-    @_close_stream
+    @check_stream
+    @close_stream
     def none_match(self, predicate=identity) -> bool:
         """
         This opeation closes the Stream.
@@ -461,8 +380,8 @@ class Stream(Generic[T]):
         """
         return not self.any(predicate)
 
-    @_check_stream
-    @_close_stream
+    @check_stream
+    @close_stream
     def find_first(self) -> Optional[Any]:
         """
         This opeation closes the Stream.
@@ -474,8 +393,8 @@ class Stream(Generic[T]):
 
         return EMPTY
 
-    @_check_stream
-    @_close_stream
+    @check_stream
+    @close_stream
     def for_each(self, consumer):
         """
         This opeation closes the Stream.
@@ -494,8 +413,8 @@ class Stream(Generic[T]):
         for g in self._pointer:
             consumer(g)
 
-    @_check_stream
-    @_close_stream
+    @check_stream
+    @close_stream
     def reduce(self, initial_point: T, bi_func) -> T:
         """
         This opeation closes the Stream.
@@ -513,8 +432,8 @@ class Stream(Generic[T]):
 
         return initial_point
 
-    @_check_stream
-    @_close_stream
+    @check_stream
+    @close_stream
     def __iter__(self) -> Iterable[T]:
         """
         This operation closes the Stream.
@@ -524,116 +443,7 @@ class Stream(Generic[T]):
 
 
 # ------------------------Parallel Stream--------------------------------------
-@decorator
-def _cancel_remaining_jobs(func, *args, **kwargs):
-    out = func(*args, **kwargs)
-    for worker in args[0]._concurrent_worker:  # args[0] corresponds to self
-        worker.cancel()
-
-    return out
 
 
-def _function_wrapper(self: 'ParallelStream', func, single_chunk=False):
-    """
-    provides a wrapper around given function.
-    :param func:
-    :param single_chunk: if False, the run jobs in chunks defined as self._worker else all
-            jobs are submitted.
-    :return:
-    """
-
-    @wraps(func)
-    def f(generator: Iterable[T]):
-        if single_chunk is False:
-            generator = divide_in_chunk(generator, self._worker)
-        else:
-            generator = (generator,)
-
-        for gs in generator:
-            container: Tuple[Future] = tuple(self._exec.submit(func, g) for g in gs)
-            self._concurrent_worker.extend(container)
-            yield from as_completed(container)
-
-    return f
-
-
-@decorator
-def _use_exec(func, *args, **kwargs):
-    self: 'ParallelStream' = args[0]
-    processing_func = args[1]
-
-    if kwargs['use_exec'] and self._exec is not None:
-        wrapped_func = _function_wrapper(self, processing_func, kwargs.get('single_chunk', False))
-        self._pointer = wrapped_func(self._pointer)
-        processing_func = Future.result
-
-    return getattr(Stream, func.__name__)(self, processing_func)
-
-
-class ParallelStream(Stream[T]):
-    def __init__(self, data: Iterable[T]):
-        super().__init__(data)
-        self._concurrent_worker: Deque[Future] = deque()
-        self._exec: Executor = None
-        self._worker: int = None
-
-    def concurrent(self, worker, is_parallel) -> 'ParallelStream[T]':
-        if self._exec is not None:
-            raise AttributeError('Executor was initialized befores.')
-
-        self._worker = worker
-        self._exec = ProcessPoolExecutor if is_parallel else ThreadPoolExecutor
-        self._exec = self._exec(max_workers=worker)
-
-        return self
-
-    @_use_exec
-    def map(self, func, *, use_exec=True) -> 'ParallelStream':
-        pass
-
-    def _predicate_wrapper(self, predicate):
-        def _predicate(g):
-            return predicate(g), g
-
-        @wraps(predicate)
-        def f(generator: Iterable[T]):
-            generator = divide_in_chunk(generator, self._worker)
-
-            for gs in generator:
-                container: Tuple[Future] = tuple(self._exec.submit(_predicate, g) for g in gs)
-                self._concurrent_worker.extend(container)
-
-                yield from filter_transform(map(Future.result, as_completed(container)),
-                                            itemgetter(0), itemgetter(1))
-
-        return f
-
-    def filter(self, predicate, *, use_exec=True) -> 'ParallelStream':
-        if use_exec and self._exec is not None:
-            predicate = self._predicate_wrapper(predicate)
-
-        return super().filter(predicate)
-
-    # terminal operation will trigger cancelling of submitted unnecessary jobs.
-    partition = _cancel_remaining_jobs(Stream.partition)
-    count = _cancel_remaining_jobs(Stream.count)
-    min = _cancel_remaining_jobs(Stream.min)
-    max = _cancel_remaining_jobs(Stream.max)
-    group_by = _cancel_remaining_jobs(Stream.group_by)
-    mapping = _cancel_remaining_jobs(Stream.mapping)
-    as_seq = _cancel_remaining_jobs(Stream.as_seq)
-    all = _cancel_remaining_jobs(Stream.all)
-    any = _cancel_remaining_jobs(Stream.any)
-    none_match = _cancel_remaining_jobs(Stream.none_match)
-    find_first = _cancel_remaining_jobs(Stream.find_first)
-    reduce = _cancel_remaining_jobs(Stream.reduce)
-    __iter__ = _cancel_remaining_jobs(Stream.__iter__)
-
-    @_cancel_remaining_jobs
-    @_use_exec
-    def for_each(self, consumer, *, use_exec=True, single_chunk=True):
-        pass
-
-
-if __name__ == 'utility.stream':
+if __name__ == 'stream.stream':
     __all__ = get_functions_clazz(__name__, __file__)
