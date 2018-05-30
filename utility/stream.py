@@ -2,11 +2,12 @@ from collections import deque
 from concurrent.futures import Future, Executor, ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 from functools import wraps
 from itertools import islice, chain
+from operator import itemgetter
 from typing import Iterable, TypeVar, Generic, Sequence, Dict, Any, Deque, Tuple
 
 from decorator import decorator
 
-from utility.utils import divide_in_chunk, get_functions_clazz, identity
+from utility.utils import filter_transform, divide_in_chunk, get_functions_clazz, identity
 
 T = TypeVar('T')
 
@@ -66,37 +67,26 @@ def _raise(is_closed: bool):
 
 
 @decorator
-def _check_stream(func, self, *args, **kwargs):
+def _check_stream(func, *args, **kwargs):
     """
     If Stream is closed then throws an exception otherwise,
     execute the function.
     :param func:
     :return:
     """
-
-    _raise(self.closed)
-    return func(self, *args, **kwargs)
+    _raise(args[0].closed)  # args[0] corresponds to self
+    return func(*args, **kwargs)
 
 
 @decorator
-def _close_stream(func, self, *args, **kwargs):
+def _close_stream(func, *args, **kwargs):
     """
     closes stream after executing the function.
     :param func:
     :return:
     """
-
-    out = func(self, *args, **kwargs)
-    self.closed = True
-    return out
-
-
-@decorator
-def _cancel_remaining_jobs(func, self: 'ParallelStream', *args, **kwargs):
-    out = func(self, *args, **kwargs)
-    for worker in self._concurrent_worker:
-        worker.cancel()
-
+    out = func(*args, **kwargs)
+    args[0].closed = True  # args[0] corresponds to self
     return out
 
 
@@ -149,7 +139,6 @@ class Stream(Generic[T]):
         :param predicate:
         :return: Stream itself
         """
-
         self._pointer = filter(predicate, self._pointer)
         return self
 
@@ -534,6 +523,16 @@ class Stream(Generic[T]):
         return iter(self._pointer)
 
 
+# ------------------------Parallel Stream--------------------------------------
+@decorator
+def _cancel_remaining_jobs(func, *args, **kwargs):
+    out = func(*args, **kwargs)
+    for worker in args[0]._concurrent_worker:  # args[0] corresponds to self
+        worker.cancel()
+
+    return out
+
+
 def _function_wrapper(self: 'ParallelStream', func, single_chunk=False):
     """
     provides a wrapper around given function.
@@ -559,7 +558,10 @@ def _function_wrapper(self: 'ParallelStream', func, single_chunk=False):
 
 
 @decorator
-def _use_exec(func, self: 'ParallelStream', processing_func, **kwargs):
+def _use_exec(func, *args, **kwargs):
+    self: 'ParallelStream' = args[0]
+    processing_func = args[1]
+
     if kwargs['use_exec'] and self._exec is not None:
         wrapped_func = _function_wrapper(self, processing_func, kwargs.get('single_chunk', False))
         self._pointer = wrapped_func(self._pointer)
@@ -586,12 +588,31 @@ class ParallelStream(Stream[T]):
         return self
 
     @_use_exec
-    def map(self, func, *, use_exec=True) -> 'Stream[T]':
+    def map(self, func, *, use_exec=True) -> 'ParallelStream':
         pass
 
-    @_use_exec
-    def filter(self, predicate, use_exec=True) -> 'Stream[T]':
-        pass
+    def _predicate_wrapper(self, predicate):
+        def _predicate(g):
+            return predicate(g), g
+
+        @wraps(predicate)
+        def f(generator: Iterable[T]):
+            generator = divide_in_chunk(generator, self._worker)
+
+            for gs in generator:
+                container: Tuple[Future] = tuple(self._exec.submit(_predicate, g) for g in gs)
+                self._concurrent_worker.extend(container)
+
+                yield from filter_transform(map(Future.result, as_completed(container)),
+                                            itemgetter(0), itemgetter(1))
+
+        return f
+
+    def filter(self, predicate, *, use_exec=True) -> 'ParallelStream':
+        if use_exec and self._exec is not None:
+            predicate = self._predicate_wrapper(predicate)
+
+        return super().filter(predicate)
 
     # terminal operation will trigger cancelling of submitted unnecessary jobs.
     partition = _cancel_remaining_jobs(Stream.partition)
