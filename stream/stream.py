@@ -2,95 +2,11 @@ from functools import wraps
 from itertools import islice, chain
 from typing import Iterable, TypeVar, Generic, Sequence, Dict, Any
 
+from stream.decos import check_stream, close_stream
+from stream.optional import Optional, EMPTY
 from utility.utils import get_functions_clazz, identity
 
 T = TypeVar('T')
-
-
-class Optional(Generic[T]):
-    """
-    This class wraps data. This helps avoid processing None element.
-    """
-
-    def __init__(self, data: T):
-        self.data = data
-
-    def present(self):
-        return self.data is not None
-
-    def get(self):
-        if not self.present():
-            raise ValueError('data is None')
-
-        return self.data
-
-    def if_present(self, consumer):
-        if self.present():
-            consumer(self.data)
-
-    def or_else(self, other):
-        return self.data if self.present() else other
-
-    def or_raise(self, exception: Exception):
-        if not self.present():
-            raise exception
-
-        return self.data
-
-    def __str__(self):
-        return str(self.data)
-
-
-EMPTY = Optional(None)
-
-
-class StreamClosedException(Exception):
-    """
-    Exception thrown in case Stream is closed and stream functions
-    are invoked.
-    """
-    pass
-
-
-def _check_closed(is_closed: bool):
-    """
-    throws exception depending on is_closed
-    :param is_closed:
-    """
-    if is_closed:
-        raise StreamClosedException()
-
-
-def _check_stream(func):
-    """
-    If Stream is closed then throws an exception otherwise,
-    execute the function.
-    :param func:
-    :return:
-    """
-
-    @wraps(func)
-    def f(self: 'Stream', *args, **kwargs):
-        _check_closed(self.closed)
-        return func(self, *args, **kwargs)
-
-    return f
-
-
-def _close_stream(func):
-    """
-    closes stream after executing the function.
-    :param func:
-    :return:
-    """
-
-    @wraps(func)
-    def f(self: 'Stream', *args, **kwargs):
-        out = func(self, *args, **kwargs)
-        self.closed = True
-        return out
-
-    return f
 
 
 class Stream(Generic[T]):
@@ -116,7 +32,7 @@ class Stream(Generic[T]):
         """
         self._close = is_close
 
-    @_check_stream
+    @check_stream
     def map(self, func) -> 'Stream[T]':
         """
         maps elements of stream.
@@ -130,7 +46,7 @@ class Stream(Generic[T]):
         self._pointer = map(func, self._pointer)
         return self
 
-    @_check_stream
+    @check_stream
     def filter(self, predicate) -> 'Stream[T]':
         """
         Filters elements from Stream.
@@ -142,11 +58,10 @@ class Stream(Generic[T]):
         :param predicate:
         :return: Stream itself
         """
-
         self._pointer = filter(predicate, self._pointer)
         return self
 
-    @_check_stream
+    @check_stream
     def sorted(self, comp=None) -> 'Stream[T]':
         """
         Sorts element of Stream.
@@ -158,7 +73,7 @@ class Stream(Generic[T]):
         self._pointer = sorted(self._pointer, key=comp)
         return self
 
-    @_check_stream
+    @check_stream
     def distinct(self) -> 'Stream[T]':
         """
         uses distinct element of for further processing.
@@ -173,7 +88,7 @@ class Stream(Generic[T]):
         self._pointer = set(self._pointer)
         return self
 
-    @_check_stream
+    @check_stream
     def limit(self, n) -> 'Stream[T]':
         """
         limits number of element in stream
@@ -187,7 +102,7 @@ class Stream(Generic[T]):
         self._pointer = islice(self._pointer, n)
         return self
 
-    @_check_stream
+    @check_stream
     def peek(self, consumer) -> 'Stream[T]':
         """
         processes element while streaming.
@@ -201,11 +116,11 @@ class Stream(Generic[T]):
         :param consumer:
         :return: Stream itself
         """
-        self._pointer = Stream.consumer_wrapper(consumer)(self._pointer)
+        self._pointer = Stream._consumer_wrapper(consumer)(self._pointer)
         return self
 
     @staticmethod
-    def consumer_wrapper(consumer):
+    def _consumer_wrapper(consumer):
         """
         Creates a wrapper around consumer.
         :param consumer:
@@ -220,7 +135,7 @@ class Stream(Generic[T]):
 
         return func
 
-    @_check_stream
+    @check_stream
     def skip(self, n) -> 'Stream[T]':
         """
         Skips n number of element from Stream
@@ -234,7 +149,7 @@ class Stream(Generic[T]):
         self._pointer = islice(self._pointer, n, None)
         return self
 
-    @_check_stream
+    @check_stream
     def flat_map(self) -> 'Stream[T]':
         """
         flats the stream if each element is iterable
@@ -248,8 +163,8 @@ class Stream(Generic[T]):
         self._pointer = chain.from_iterable(self._pointer)
         return self
 
-    @_check_stream
-    @_close_stream
+    @check_stream
+    @close_stream
     def partition(self, mapper=bool) -> Dict[bool, Sequence[T]]:
         """
         This opeation closes the stream.
@@ -265,8 +180,8 @@ class Stream(Generic[T]):
         """
         return self.group_by(mapper)
 
-    @_check_stream
-    @_close_stream
+    @check_stream
+    @close_stream
     def count(self) -> int:
         """
         This opeation closes the stream.
@@ -275,8 +190,8 @@ class Stream(Generic[T]):
         """
         return sum(1 for _ in self._pointer)
 
-    @_check_stream
-    @_close_stream
+    @check_stream
+    @close_stream
     def min(self, comp=None) -> Optional[Any]:
         """
         This opeation closes the Stream.
@@ -294,8 +209,8 @@ class Stream(Generic[T]):
         except ValueError:
             return EMPTY
 
-    @_check_stream
-    @_close_stream
+    @check_stream
+    @close_stream
     def max(self, comp=None) -> Optional[Any]:
         """
         This opeation closes the Stream.
@@ -313,8 +228,8 @@ class Stream(Generic[T]):
         except ValueError:
             return EMPTY
 
-    @_check_stream
-    @_close_stream
+    @check_stream
+    @close_stream
     def group_by(self, key_hasher, value_mapper=identity) -> Dict[Any, Sequence[T]]:
         """
         This opeation closes the Stream.
@@ -340,8 +255,8 @@ class Stream(Generic[T]):
 
         return out
 
-    @_check_stream
-    @_close_stream
+    @check_stream
+    @close_stream
     def mapping(self, key_mapper, value_mapper=identity) -> dict:
         """
         This opeation closes the Stream.
@@ -382,17 +297,8 @@ class Stream(Generic[T]):
 
         pt.append(v)
 
-    @_check_stream
-    @_close_stream
-    def __iter__(self) -> Iterable[T]:
-        """
-        This opeation closes the Stream.
-        :return:iterator from stream
-        """
-        return iter(self._pointer)
-
-    @_check_stream
-    @_close_stream
+    @check_stream
+    @close_stream
     def as_seq(self, seq_clazz=list) -> Sequence[T]:
         """
         This opeation closes the Stream.
@@ -402,8 +308,8 @@ class Stream(Generic[T]):
         """
         return seq_clazz(self._pointer)
 
-    @_check_stream
-    @_close_stream
+    @check_stream
+    @close_stream
     def all(self, predicate=identity) -> bool:
         """
         This opeation closes the Stream.
@@ -424,8 +330,8 @@ class Stream(Generic[T]):
         """
         return all(map(predicate, self._pointer))
 
-    @_check_stream
-    @_close_stream
+    @check_stream
+    @close_stream
     def any(self, predicate=identity) -> bool:
         """
         This opeation closes the Stream.
@@ -446,8 +352,8 @@ class Stream(Generic[T]):
         """
         return any(map(predicate, self._pointer))
 
-    @_check_stream
-    @_close_stream
+    @check_stream
+    @close_stream
     def none_match(self, predicate=identity) -> bool:
         """
         This opeation closes the Stream.
@@ -474,8 +380,8 @@ class Stream(Generic[T]):
         """
         return not self.any(predicate)
 
-    @_check_stream
-    @_close_stream
+    @check_stream
+    @close_stream
     def find_first(self) -> Optional[Any]:
         """
         This opeation closes the Stream.
@@ -487,8 +393,8 @@ class Stream(Generic[T]):
 
         return EMPTY
 
-    @_check_stream
-    @_close_stream
+    @check_stream
+    @close_stream
     def for_each(self, consumer):
         """
         This opeation closes the Stream.
@@ -507,8 +413,8 @@ class Stream(Generic[T]):
         for g in self._pointer:
             consumer(g)
 
-    @_check_stream
-    @_close_stream
+    @check_stream
+    @close_stream
     def reduce(self, initial_point: T, bi_func) -> T:
         """
         This opeation closes the Stream.
@@ -526,6 +432,15 @@ class Stream(Generic[T]):
 
         return initial_point
 
+    @check_stream
+    @close_stream
+    def __iter__(self) -> Iterable[T]:
+        """
+        This operation closes the Stream.
+        :return:iterator from stream
+        """
+        return iter(self._pointer)
 
-if __name__ == 'utility.stream':
+
+if __name__ == 'stream.stream':
     __all__ = get_functions_clazz(__name__, __file__)
