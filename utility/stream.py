@@ -4,6 +4,8 @@ from functools import wraps
 from itertools import islice, chain
 from typing import Iterable, TypeVar, Generic, Sequence, Dict, Any, Deque, Tuple
 
+from decorator import decorator
+
 from utility.utils import divide_in_chunk, get_functions_clazz, identity
 
 T = TypeVar('T')
@@ -63,7 +65,8 @@ def _raise(is_closed: bool):
         raise StreamClosedException()
 
 
-def _check_stream(func):
+@decorator
+def _check_stream(func, self, *args, **kwargs):
     """
     If Stream is closed then throws an exception otherwise,
     execute the function.
@@ -71,40 +74,30 @@ def _check_stream(func):
     :return:
     """
 
-    @wraps(func)
-    def f(self: 'Stream', *args, **kwargs):
-        _raise(self.closed)
-        return func(self, *args, **kwargs)
-
-    return f
+    _raise(self.closed)
+    return func(self, *args, **kwargs)
 
 
-def _close_stream(func):
+@decorator
+def _close_stream(func, self, *args, **kwargs):
     """
     closes stream after executing the function.
     :param func:
     :return:
     """
 
-    @wraps(func)
-    def f(self: 'Stream', *args, **kwargs):
-        out = func(self, *args, **kwargs)
-        self.closed = True
-        return out
-
-    return f
+    out = func(self, *args, **kwargs)
+    self.closed = True
+    return out
 
 
-def _cancel_remaining_jobs(func):
-    @wraps(func)
-    def f(self: 'ParallelStream', *args, **kwargs):
-        out = func(self, *args, **kwargs)
-        for worker in self._concurrent_worker:
-            worker.cancel()
+@decorator
+def _cancel_remaining_jobs(func, self: 'ParallelStream', *args, **kwargs):
+    out = func(self, *args, **kwargs)
+    for worker in self._concurrent_worker:
+        worker.cancel()
 
-        return out
-
-    return f
+    return out
 
 
 class Stream(Generic[T]):
@@ -541,6 +534,15 @@ class Stream(Generic[T]):
         return iter(self._pointer)
 
 
+@decorator
+def use_exec(func, self: 'ParallelStream', f, *args, **kwargs):
+    if kwargs['use_exec'] and self._exec is not None:
+        self._pointer = self._function_wrapper(f)(self._pointer)
+        f = Future.result
+
+    return getattr(Stream, func.__name__)(self, f, *args, **kwargs)
+
+
 class ParallelStream(Stream[T]):
     def __init__(self, data: Iterable[T]):
         super().__init__(data)
@@ -557,7 +559,7 @@ class ParallelStream(Stream[T]):
         self._exec = self._exec(max_workers=worker)
 
         return self
-
+    @use_exec
     def map(self, func, use_exec=True) -> 'Stream[T]':
         """
         maps elements of stream.
@@ -590,6 +592,8 @@ class ParallelStream(Stream[T]):
         def f(generator: Iterable[T]):
             if single_chunk is False:
                 generator = divide_in_chunk(generator, self._worker)
+            else:
+                generator = (generator,)
 
             for gs in generator:
                 container: Tuple[Future] = tuple(self._exec.submit(func, g) for g in gs)
@@ -598,7 +602,6 @@ class ParallelStream(Stream[T]):
 
         return f
 
-    @_check_stream
     def filter(self, predicate, use_exec=True) -> 'Stream[T]':
         """
         Filters elements from Stream.
