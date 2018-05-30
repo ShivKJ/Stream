@@ -442,8 +442,5 @@ class Stream(Generic[T]):
         return iter(self._pointer)
 
 
-# ------------------------Parallel Stream--------------------------------------
-
-
 if __name__ == 'stream.stream':
     __all__ = get_functions_clazz(__name__, __file__)
