@@ -534,13 +534,38 @@ class Stream(Generic[T]):
         return iter(self._pointer)
 
 
-@decorator
-def use_exec(func, self: 'ParallelStream', f, *args, **kwargs):
-    if kwargs['use_exec'] and self._exec is not None:
-        self._pointer = self._function_wrapper(f)(self._pointer)
-        f = Future.result
+def _function_wrapper(self: 'ParallelStream', func, single_chunk=False):
+    """
+    provides a wrapper around given function.
+    :param func:
+    :param single_chunk: if False, the run jobs in chunks defined as self._worker else all
+            jobs are submitted.
+    :return:
+    """
 
-    return getattr(Stream, func.__name__)(self, f, *args, **kwargs)
+    @wraps(func)
+    def f(generator: Iterable[T]):
+        if single_chunk is False:
+            generator = divide_in_chunk(generator, self._worker)
+        else:
+            generator = (generator,)
+
+        for gs in generator:
+            container: Tuple[Future] = tuple(self._exec.submit(func, g) for g in gs)
+            self._concurrent_worker.extend(container)
+            yield from as_completed(container)
+
+    return f
+
+
+@decorator
+def _use_exec(func, self: 'ParallelStream', processing_func, **kwargs):
+    if kwargs['use_exec'] and self._exec is not None:
+        wrapped_func = _function_wrapper(self, processing_func, kwargs.get('single_chunk', False))
+        self._pointer = wrapped_func(self._pointer)
+        processing_func = Future.result
+
+    return getattr(Stream, func.__name__)(self, processing_func)
 
 
 class ParallelStream(Stream[T]):
@@ -559,67 +584,14 @@ class ParallelStream(Stream[T]):
         self._exec = self._exec(max_workers=worker)
 
         return self
-    @use_exec
-    def map(self, func, use_exec=True) -> 'Stream[T]':
-        """
-        maps elements of stream.
 
-        Exp:
-        stream = Stream(range(5)).map(lambda x: 2*x)
-        print(list(stream)) # prints [0, 2, 4, 6, 8]
+    @_use_exec
+    def map(self, func, *, use_exec=True) -> 'Stream[T]':
+        pass
 
-        :param func:
-        :param use_exec: flag to use executor. This will be used only if "concurrent" method has been invoked
-        :return: Stream itself
-        """
-
-        if use_exec and self._exec is not None:
-            self._pointer = self._function_wrapper(func)(self._pointer)
-            func = Future.result
-
-        return super().map(func)
-
-    def _function_wrapper(self, func, single_chunk=False):
-        """
-        provides a wrapper around given function.
-        :param func:
-        :param single_chunk: if False, the run jobs in chunks defined as self._worker else all
-                jobs are submitted.
-        :return:
-        """
-
-        @wraps(func)
-        def f(generator: Iterable[T]):
-            if single_chunk is False:
-                generator = divide_in_chunk(generator, self._worker)
-            else:
-                generator = (generator,)
-
-            for gs in generator:
-                container: Tuple[Future] = tuple(self._exec.submit(func, g) for g in gs)
-                self._concurrent_worker.extend(container)
-                yield from as_completed(container)
-
-        return f
-
+    @_use_exec
     def filter(self, predicate, use_exec=True) -> 'Stream[T]':
-        """
-        Filters elements from Stream.
-
-        Exp:
-        stream = Stream(range(5)).filter(lambda x: x%2 == 1)
-        print(list(stream)) # prints [1, 3]
-
-        :param predicate:
-        :param use_exec: flag to use executor. This will be used only if "concurrent" method has been invoked
-        :return: Stream itself
-        """
-
-        if use_exec and self._exec is not None:
-            self._pointer = self._function_wrapper(predicate)(self._pointer)
-            predicate = Future.result
-
-        return super().filter(predicate)
+        pass
 
     # terminal operation will trigger cancelling of submitted unnecessary jobs.
     partition = _cancel_remaining_jobs(Stream.partition)
@@ -637,27 +609,9 @@ class ParallelStream(Stream[T]):
     __iter__ = _cancel_remaining_jobs(Stream.__iter__)
 
     @_cancel_remaining_jobs
-    def for_each(self, consumer, use_exec=True):
-        """
-        This opeation closes the Stream.
-        consumes each element from stream.
-        stream = Stream(range(5))
-        stream.for_each(print)
-        prints ->
-        1
-        2
-        3
-        4
-        5
-
-        :param consumer:
-        :param use_exec: True if executor has to be used.
-        """
-        if use_exec and self._exec is not None:
-            self._pointer = self._function_wrapper(consumer, single_chunk=True)(self._pointer)
-            consumer = Future.result
-
-        super().for_each(consumer)
+    @_use_exec
+    def for_each(self, consumer, *, use_exec=True, single_chunk=True):
+        pass
 
 
 if __name__ == 'utility.stream':
