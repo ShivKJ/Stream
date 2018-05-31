@@ -1,5 +1,5 @@
 import json
-from csv import DictReader
+from csv import DictReader, reader as ListReader
 from datetime import date, datetime, timedelta
 from functools import partial, wraps
 from inspect import FullArgSpec, getfullargspec
@@ -278,16 +278,20 @@ def json_dump(obj, file: str, indent: int = None, default_cast=None,
                   cls=cls)
 
 
-def csv_itr(file: str) -> Iterable[Dict[str, str]]:
+def csv_itr(file: str, as_dict=True) -> Iterable[Dict[str, str]]:
     """
     returns a generator from reading csv file.
     Each row is returned as dictionary.
 
     :param file:
+    :param as_dict:
     :return: row of csv
     """
     with open(file) as f:
-        yield from DictReader(f)
+        yield from (DictReader(f) if as_dict else ListReader(f))
+
+
+csv_ListReader = partial(csv_itr, as_dict=False)
 
 
 # -----------------------------------------------------
@@ -385,4 +389,4 @@ def get_functions_clazz(module_name: str, script_path: str) -> tuple:
 
 
 if __name__ == 'utility.utils':
-    __all__ = get_functions_clazz(__name__, __file__)
+    __all__ = get_functions_clazz(__name__, __file__) + ('csv_ListReader',)

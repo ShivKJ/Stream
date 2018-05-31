@@ -301,7 +301,7 @@ class Stream(Generic[T]):
     @close_stream
     def as_seq(self, seq_clazz=list) -> Sequence[T]:
         """
-        This opeation closes the Stream.
+        This operation closes the Stream.
         returns Stream elements as sequence, for example as list.
         :param seq_clazz:
         :return:
@@ -415,7 +415,7 @@ class Stream(Generic[T]):
 
     @check_stream
     @close_stream
-    def reduce(self, initial_point: T, bi_func) -> T:
+    def reduce(self, bi_func, initial_point: T = None) -> T:
         """
         This opeation closes the Stream.
         reduces stream element to produce an element.
@@ -427,6 +427,14 @@ class Stream(Generic[T]):
         :param bi_func:
         :return:
         """
+        self._pointer = iter(self._pointer)
+
+        if initial_point is None:
+            try:
+                initial_point = next(self._pointer)
+            except StopIteration:
+                pass
+        
         for g in self._pointer:
             initial_point = bi_func(initial_point, g)
 
