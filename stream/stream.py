@@ -1,12 +1,15 @@
 from functools import wraps
-from itertools import islice, chain
+from itertools import islice, chain, accumulate
 from typing import Iterable, TypeVar, Generic, Sequence, Dict, Any
 
 from stream.decos import check_stream, close_stream
+from stream.exception import NoElementInStream
 from stream.optional import Optional, EMPTY
 from utility.utils import get_functions_clazz, identity
 
 T = TypeVar('T')
+
+NIL = object()
 
 
 class Stream(Generic[T]):
@@ -415,7 +418,7 @@ class Stream(Generic[T]):
 
     @check_stream
     @close_stream
-    def reduce(self, bi_func, initial_point: T = None) -> T:
+    def reduce(self, bi_func, initial_point: T = NIL) -> T:
         """
         This opeation closes the Stream.
         reduces stream element to produce an element.
@@ -427,16 +430,16 @@ class Stream(Generic[T]):
         :param bi_func:
         :return:
         """
-        self._pointer = iter(self._pointer)
+        if initial_point is not NIL:
+            self._pointer = chain((initial_point,), self._pointer)
 
-        if initial_point is None:
-            try:
-                initial_point = next(self._pointer)
-            except StopIteration:
-                pass
-        
-        for g in self._pointer:
-            initial_point = bi_func(initial_point, g)
+        self._pointer = accumulate(self._pointer, bi_func)
+
+        for initial_point in self._pointer:
+            pass
+        else:
+            if initial_point is NIL:
+                raise NoElementInStream()
 
         return initial_point
 

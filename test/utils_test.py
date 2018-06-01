@@ -4,7 +4,7 @@ from datetime import date
 import utility
 
 
-class MyTestCase(unittest.TestCase):
+class UtilityTest(unittest.TestCase):
     def test_divide_in_chunk(self):
         self.assertEqual(tuple(utility.divide_in_chunk(range(2, 12), 3)),
                          ((2, 3, 4), (5, 6, 7), (8, 9, 10), (11,)))
