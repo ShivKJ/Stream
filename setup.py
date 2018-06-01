@@ -3,7 +3,7 @@ from distutils.core import setup
 setup(
     name='basic',
     version='1.0',
-    packages=['utility'],
+    packages=['utility', 'stream'],
     url='https://bitbucket.org/ShivKJ/basics/',
     license='SKJ',
     author='Shiv',

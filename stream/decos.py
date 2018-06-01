@@ -76,3 +76,7 @@ def function_wrapper(self, func, single_chunk=False):
             yield from as_completed(container)
 
     return f
+
+
+if __name__ == 'stream.decos':
+    __all__ = ()

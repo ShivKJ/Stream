@@ -1,4 +1,4 @@
-from stream import decos
+from stream.decos import *
 from stream.exception import StreamClosedException
 from stream.optional import Optional, EMPTY
 from stream.parallelStream import ParallelStream
