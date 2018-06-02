@@ -8,7 +8,7 @@ from operator import itemgetter
 from os import walk
 from os.path import abspath, join
 from time import time
-from typing import Iterable, Sequence, TypeVar, Dict, Tuple
+from typing import Iterable, TypeVar, Dict, Tuple
 
 from dateutil.parser import parse
 from psycopg2 import connect
@@ -342,7 +342,7 @@ def date_generator(start_date, end_date, include_end=True, interval=1) -> Iterab
 
 # -----------------------------------------------------
 
-def divide_in_chunk(docs: Iterable[T], chunk_size: int) -> Iterable[Sequence[T]]:
+def divide_in_chunk(docs: Iterable[T], chunk_size: int) -> Iterable[Tuple[T]]:
     """
     divides list of elements in fixed size of chunks.
     Last chunk can have elements less than chunk_size.
@@ -351,6 +351,8 @@ def divide_in_chunk(docs: Iterable[T], chunk_size: int) -> Iterable[Sequence[T]]
     :param chunk_size:
     :return: generator for chunks
     """
+    assert chunk_size != 0, 'chunk size can not be zero'
+
     docs = iter(docs)
     rng = range(chunk_size)
 
@@ -361,8 +363,14 @@ def divide_in_chunk(docs: Iterable[T], chunk_size: int) -> Iterable[Sequence[T]]
         chunk = _next_chunk(docs, rng)
 
 
-def _next_chunk(itr: Iterable[T], rng: range):
-    return tuple(map(itemgetter(1), zip(rng, itr)))
+def _next_chunk(itr: Iterable[T], rng: range) -> tuple:
+    """
+    fetching one chunk from itr using rng class object
+    :param itr:
+    :param rng: defines chunk size
+    :return:
+    """
+    return tuple(item[1] for item in zip(rng, itr))
 
 
 # ------------ importing function defined only in this module-------------
