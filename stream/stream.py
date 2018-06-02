@@ -3,7 +3,6 @@ from itertools import islice, chain, accumulate
 from typing import Iterable, TypeVar, Generic, Sequence, Dict, Any
 
 from stream.decos import check_stream, close_stream
-from stream.exception import NoElementInStream
 from stream.optional import Optional, EMPTY
 from utility.utils import get_functions_clazz, identity
 
@@ -418,7 +417,7 @@ class Stream(Generic[T]):
 
     @check_stream
     @close_stream
-    def reduce(self, bi_func, initial_point: T = NIL) -> T:
+    def reduce(self, bi_func, initial_point: T = NIL) -> Optional[T]:
         """
         This opeation closes the Stream.
         reduces stream element to produce an element.
@@ -435,13 +434,9 @@ class Stream(Generic[T]):
 
         self._pointer = accumulate(self._pointer, bi_func)
 
-        for initial_point in self._pointer:
-            pass
-        else:
-            if initial_point is NIL:
-                raise NoElementInStream()
+        for initial_point in self._pointer: pass
 
-        return initial_point
+        return EMPTY if initial_point is NIL else Optional(initial_point)
 
     @check_stream
     @close_stream
