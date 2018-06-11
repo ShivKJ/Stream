@@ -1,29 +1,15 @@
 # README #
 
-This README would normally document whatever steps are necessary to get your application up and running.
+# How do I set up? #
+* clone repo: https://github.com/ShivKJ/Basics.git 
+* workon YOUR_VIRTUAL_EVN ; make sure that you use python3.6
+* cd to cloned repo
+* pip install .
+* to install dependencies: pip install -r requirement.txt
+* to run tests: python -m unittest discover -p '*test*'
 
 ### What is this repository for? ###
 
-* Quick summary
-* Version
-* [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
+* This repo provides utility code. Stream API can be used to create chained method which is more readable.
+* 1.2
 
-### How do I get set up? ###
-
-* Summary of set up
-* Configuration
-* Dependencies
-* Database configuration
-* How to run tests
-* Deployment instructions
-
-### Contribution guidelines ###
-
-* Writing tests
-* Code review
-* Other guidelines
-
-### Who do I talk to? ###
-
-* Repo owner or admin
-* Other community or team contact
