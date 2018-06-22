@@ -20,7 +20,7 @@ MANIFEST
 
 *.pyc
 
-basic.egg-info/
+*.egg-info/
 build/
 
 .gitmodules

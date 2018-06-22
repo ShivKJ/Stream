@@ -44,6 +44,7 @@ class UtilityTest(unittest.TestCase):
 
     def test_as_date(self):
         self.assertEqual(utility.as_date('2017-1-1 00:12:31.912'), date(year=2017, month=1, day=1))
+        self.assertEqual(utility.as_date('4-8-2018'), date(year=2017, month=8, day=4))
 
     def test_date_generator(self):
         sd = '2017-1-1'

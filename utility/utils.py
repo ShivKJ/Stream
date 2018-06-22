@@ -180,7 +180,13 @@ class DB:
 
     @property
     def url(self) -> Tuple[str, str]:
-        return 'psql -U {user} -d {dbname} -h {host} -p {port}'.format(**self.__dict__), self.password
+        return str(self), self.password
+
+    def __str__(self) -> str:
+        return 'psql -U {user} -d {dbname} -h {host} -p {port}'.format(**self.__dict__)
+
+    def __repr__(self) -> str:
+        return str(self)
 
 
 # -----------------------------------------------------
@@ -299,11 +305,15 @@ def as_date(date_) -> date:
     """
     cast date_ to date object.
 
+    If date is in string format then it
+    has to be in either YYYY-MM-DD format or
+    DD-MM-YYYY format
+
     :param date_:
     :return: date object from "date_"
     """
     if isinstance(date_, str):
-        date_ = parse(date_)
+        date_ = parse(date_, dayfirst=True)
 
     if isinstance(date_, datetime):
         date_ = date_.date()
