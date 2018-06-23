@@ -19,7 +19,7 @@ T = TypeVar('T')
 
 
 # --------------------------- The decorators -----------------------------------
-def execution_time(logger_name: str = None):
+def execution_time(logger_name: str = None, prefix: str = None):
     """
     logs time taken to execute a function to file associated with logger_name.
     if logger_name is None then creates a log file in current dir to log execution time,
@@ -31,12 +31,24 @@ def execution_time(logger_name: str = None):
             pass
 
     :param logger_name:
+    :param prefix: to be added before every logging message
     :return a decorator which will applied on function
     """
 
     if logger_name is None:
         from utility.logger import LOGGER_NAME
         logger_name = LOGGER_NAME
+
+    def message(m: str):
+        """
+        adds prefix before the message m if prefix is not None
+        :param m:
+        :return:
+        """
+        if prefix is not None:
+            m = prefix + ' : ' + m
+
+        return m
 
     def _execution_time(func):
         """
@@ -52,7 +64,7 @@ def execution_time(logger_name: str = None):
             start_time = time()
             output = func(*args, **kwargs)
 
-            logger.info('time taken to execute "%s": %0.3f seconds',
+            logger.info(message('time taken to execute "%s": %0.3f seconds'),
                         func.__name__, time() - start_time)
             return output
 
