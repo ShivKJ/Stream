@@ -8,7 +8,7 @@ from operator import itemgetter
 from os import walk
 from os.path import abspath, join
 from time import time
-from typing import Iterable, TypeVar, Dict, Tuple
+from typing import Callable, Dict, Iterable, Tuple, TypeVar
 
 from dateutil.parser import parse
 from psycopg2 import connect
@@ -238,7 +238,7 @@ def identity(f: T) -> T:
 
 
 def _files_inside_dir(dir_name: str, match=_always_true,
-                      append_full_path=True) -> str:
+                      append_full_path=True) -> Iterable[str]:
     """
     recursively finds all files inside dir and in its subdir recursively.
     Each out file name will have complete path
@@ -257,7 +257,7 @@ def _files_inside_dir(dir_name: str, match=_always_true,
 
 
 def files_inside_dir(dir_name: str, match=_always_true,
-                     as_type=list, append_full_path=True) -> Iterable[str]:
+                     as_type: Callable[[Iterable[str]], T] = list, append_full_path=True) -> T:
     """
     recursively finds all files inside dir and in its subdir recursively
     :param dir_name: top level dir
@@ -330,16 +330,13 @@ csv_ListReader = partial(csv_itr, as_dict=False)
 def as_date(date_) -> date:
     """
     cast date_ to date object.
-
-    If date is in string format then it
-    has to be in either YYYY-MM-DD format or
-    DD-MM-YYYY format
+    date string must be in format : YYYY-MM-DD
 
     :param date_:
     :return: date object from "date_"
     """
     if isinstance(date_, str):
-        date_ = parse(date_, dayfirst=True)
+        date_ = parse(date_)
 
     if isinstance(date_, datetime):
         date_ = date_.date()
@@ -399,7 +396,7 @@ def divide_in_chunk(docs: Iterable[T], chunk_size: int) -> Iterable[Tuple[T]]:
         chunk = _next_chunk(docs, rng)
 
 
-def _next_chunk(itr: Iterable[T], rng: range) -> tuple:
+def _next_chunk(itr: Iterable[T], rng: range) -> Tuple[T]:
     """
     fetching one chunk from itr using rng class object
     :param itr:
