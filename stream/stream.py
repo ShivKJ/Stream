@@ -301,14 +301,15 @@ class Stream(Generic[T]):
 
     @check_stream
     @close_stream
-    def as_seq(self, seq_clazz=list) -> Sequence[T]:
+    def as_seq(self, seq_clazz=list, **kwargs) -> Sequence[T]:
         """
         This operation closes the Stream.
         returns Stream elements as sequence, for example as list.
         :param seq_clazz:
+        :param kwargs
         :return:
         """
-        return seq_clazz(self._pointer)
+        return seq_clazz(self._pointer, **kwargs)
 
     @check_stream
     @close_stream
