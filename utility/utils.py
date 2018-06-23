@@ -19,32 +19,46 @@ T = TypeVar('T')
 
 
 # --------------------------- The decorators -----------------------------------
-def execution_time(func, logger_name: str = None):
+def execution_time(logger_name: str = None):
     """
-    A decorator to log execution time of function.
+    logs time taken to execute a function to file associated with logger_name.
+    if logger_name is None then creates a log file in current dir to log execution time,
 
-    In case, log file path is not defined, current dir is taken for log dir.
-    :param func:
+    example:
+
+        @execution_time()
+        def function(*args,**kwargs):
+            pass
+
     :param logger_name:
-    :return:
+    :return a decorator which will applied on function
     """
 
     if logger_name is None:
         from utility.logger import LOGGER_NAME
         logger_name = LOGGER_NAME
 
-    logger = getLogger(logger_name)
+    def _execution_time(func):
+        """
+        A decorator to log execution time of function.
 
-    @wraps(func)
-    def f(*args, **kwargs):
-        start_time = time()
-        output = func(*args, **kwargs)
+        :param func:
+        :return: wrapping function
+        """
+        logger = getLogger(logger_name)
 
-        logger.info('time taken to execute %s: %0.3f seconds',
-                    func.__name__, time() - start_time)
-        return output
+        @wraps(func)
+        def f(*args, **kwargs):
+            start_time = time()
+            output = func(*args, **kwargs)
 
-    return f
+            logger.info('time taken to execute "%s": %0.3f seconds',
+                        func.__name__, time() - start_time)
+            return output
+
+        return f
+
+    return _execution_time
 
 
 class VarArgPresent(Exception):
