@@ -1,14 +1,14 @@
 from collections import deque
-from concurrent.futures import Future, Executor, ProcessPoolExecutor, ThreadPoolExecutor, as_completed
+from concurrent.futures import Executor, Future, ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 from functools import wraps
 from operator import itemgetter
-from typing import Iterable, TypeVar, Deque, Tuple
+from typing import Deque, Iterable, Tuple, TypeVar
 
 from decorator import decorator
 
-from stream.decos import function_wrapper, cancel_remaining_jobs
+from stream.decos import cancel_remaining_jobs, function_wrapper
 from stream.stream import Stream
-from utility.utils import get_functions_clazz, filter_transform, divide_in_chunk
+from utility.utils import divide_in_chunk, filter_transform, get_functions_clazz
 
 T = TypeVar('T')
 

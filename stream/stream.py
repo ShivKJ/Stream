@@ -1,9 +1,9 @@
 from functools import wraps
-from itertools import islice, chain, accumulate
-from typing import Iterable, TypeVar, Generic, Sequence, Dict, Any
+from itertools import accumulate, chain, islice
+from typing import Any, Callable, Dict, Generic, Iterable, Sequence, TypeVar
 
 from stream.decos import check_stream, close_stream
-from stream.optional import Optional, EMPTY
+from stream.optional import EMPTY, Optional
 from utility.utils import get_functions_clazz, identity
 
 T = TypeVar('T')
@@ -301,7 +301,7 @@ class Stream(Generic[T]):
 
     @check_stream
     @close_stream
-    def as_seq(self, seq_clazz=list, **kwargs) -> Sequence[T]:
+    def as_seq(self, seq_clazz: Callable[[Iterable, ...], T] = list, **kwargs) -> T:
         """
         This operation closes the Stream.
         returns Stream elements as sequence, for example as list.
