@@ -7,13 +7,13 @@ from logging import getLogger
 from operator import itemgetter
 from os import walk
 from os.path import abspath, join
-from time import time
-from typing import Callable, Dict, Iterable, Tuple, TypeVar
+from typing import Callable, Dict, Iterable, List, Tuple, TypeVar, Union
 
 from dateutil.parser import parse
 from psycopg2 import connect
 from psycopg2.extensions import connection
 from psycopg2.extras import DictConnection
+from time import time
 
 T = TypeVar('T')
 
@@ -39,7 +39,7 @@ def execution_time(logger_name: str = None, prefix: str = None):
         from utility.logger import LOGGER_NAME
         logger_name = LOGGER_NAME
 
-    def message(m: str):
+    def message(m: str) -> str:
         """
         adds prefix before the message m if prefix is not None
         :param m:
@@ -237,8 +237,12 @@ def identity(f: T) -> T:
     return f
 
 
-def _files_inside_dir(dir_name: str, match=_always_true,
-                      append_full_path=True) -> Iterable[str]:
+PathGenerator = Iterable[str]
+
+
+def _files_inside_dir(dir_name: str,
+                      match=_always_true,
+                      append_full_path=True) -> PathGenerator:
     """
     recursively finds all files inside dir and in its subdir recursively.
     Each out file name will have complete path
@@ -256,8 +260,10 @@ def _files_inside_dir(dir_name: str, match=_always_true,
         yield from filter(match, map(dir_joiner, files))
 
 
-def files_inside_dir(dir_name: str, match=_always_true,
-                     as_type: Callable[[Iterable[str]], T] = list, append_full_path=True) -> T:
+def files_inside_dir(dir_name: str,
+                     match=_always_true,
+                     as_type: Callable[[PathGenerator], T] = list,
+                     append_full_path=True) -> T:
     """
     recursively finds all files inside dir and in its subdir recursively
     :param dir_name: top level dir
@@ -323,11 +329,13 @@ def csv_itr(file: str, as_dict=True) -> Iterable[Dict[str, str]]:
         yield from (DictReader(f) if as_dict else ListReader(f))
 
 
-csv_ListReader = partial(csv_itr, as_dict=False)
-
+csv_ListReader: Callable[[str], Iterable[List[str]]] = partial(csv_itr, as_dict=False)
 
 # -----------------------------------------------------
-def as_date(date_) -> date:
+DateTime = Union[str, date, datetime]
+
+
+def as_date(date_: DateTime) -> date:
     """
     cast date_ to date object.
     date string must be in format : YYYY-MM-DD
@@ -346,7 +354,8 @@ def as_date(date_) -> date:
     return date_
 
 
-def date_generator(start_date, end_date, include_end=True, interval=1) -> Iterable[date]:
+def date_generator(start_date: DateTime, end_date: DateTime,
+                   include_end=True, interval=1) -> Iterable[date]:
     """
     generates dates between start and end date
     :param start_date:
@@ -374,8 +383,10 @@ def date_generator(start_date, end_date, include_end=True, interval=1) -> Iterab
 
 
 # -----------------------------------------------------
+Chunk = Tuple[T, ...]
 
-def divide_in_chunk(docs: Iterable[T], chunk_size: int) -> Iterable[Tuple[T]]:
+
+def divide_in_chunk(docs: Iterable[T], chunk_size: int) -> Iterable[Chunk]:
     """
     divides list of elements in fixed size of chunks.
     Last chunk can have elements less than chunk_size.
@@ -396,7 +407,7 @@ def divide_in_chunk(docs: Iterable[T], chunk_size: int) -> Iterable[Tuple[T]]:
         chunk = _next_chunk(docs, rng)
 
 
-def _next_chunk(itr: Iterable[T], rng: range) -> Tuple[T]:
+def _next_chunk(itr: Iterable[T], rng: range) -> Chunk:
     """
     fetching one chunk from itr using rng class object
     :param itr:

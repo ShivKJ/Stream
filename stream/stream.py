@@ -301,7 +301,7 @@ class Stream(Generic[T]):
 
     @check_stream
     @close_stream
-    def as_seq(self, seq_clazz: Callable[[Iterable, None], T] = list, **kwargs) -> T:
+    def as_seq(self, seq_clazz: Callable[[Iterable, Ellipsis], T] = list, **kwargs) -> T:
         """
         This operation closes the Stream.
         returns Stream elements as sequence, for example as list.
