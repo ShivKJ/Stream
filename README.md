@@ -5,7 +5,6 @@
 * workon YOUR_VIRTUAL_EVN ; make sure that you use python3.6
 * cd to cloned repo
 * pip install .
-* to install dependencies: pip install -r requirement.txt
 * to run tests: python -m unittest discover -p '\*test\*'
 
 ### What is this repository for? ###
