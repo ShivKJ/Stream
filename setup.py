@@ -1,5 +1,6 @@
-from distutils.core import setup
 from os.path import dirname, join, realpath
+
+from setuptools import setup
 
 __TOP_LEVEL_DIR = dirname(realpath(__file__))
 
@@ -11,9 +12,9 @@ setup(
     version='1.3',
     packages=('utility', 'stream'),
     url='https://bitbucket.org/ShivKJ/basics/',
-    license='SKJ',
+    license='MIT License',
     author='Shiv',
-    author_email='None@gmail.com',
+    author_email='shivkj001@gmail.com',
     description='basic utility functions',
     install_requires=dependencies,
     python_requires='>=3.6',
