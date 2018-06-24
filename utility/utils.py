@@ -16,6 +16,7 @@ from psycopg2.extras import DictConnection
 from time import time
 
 T = TypeVar('T')
+Z = TypeVar('Z')
 
 
 # --------------------------- The decorators -----------------------------------
@@ -189,7 +190,9 @@ class DB:
     The underline database used is Postgresql
     """
 
-    def __init__(self, *, dbname, user, password, host='localhost', port=5432):
+    def __init__(self, *, dbname: str,
+                 user: str, password: str,
+                 host: str = 'localhost', port: int = 5432):
         self.dbname = dbname
         self.user = user
         self.password = password
@@ -216,8 +219,12 @@ class DB:
 
 
 # -----------------------------------------------------
+Filter = Callable[[T], bool]
 
-def filter_transform(data_stream: Iterable[T], condition, transform) -> Iterable[T]:
+
+def filter_transform(data_stream: Iterable[T],
+                     condition: Filter,
+                     transform: Callable[[T], Z]) -> Iterable[Z]:
     """
     given a list filters elements and transform filtered element
     :param data_stream:
@@ -241,7 +248,7 @@ PathGenerator = Iterable[str]
 
 
 def _files_inside_dir(dir_name: str,
-                      match=_always_true,
+                      match: Filter = _always_true,
                       append_full_path=True) -> PathGenerator:
     """
     recursively finds all files inside dir and in its subdir recursively.
@@ -261,7 +268,7 @@ def _files_inside_dir(dir_name: str,
 
 
 def files_inside_dir(dir_name: str,
-                     match=_always_true,
+                     match: Filter = _always_true,
                      as_type: Callable[[PathGenerator], T] = list,
                      append_full_path=True) -> T:
     """
@@ -278,14 +285,15 @@ def files_inside_dir(dir_name: str,
     return it if as_type is None else as_type(it)
 
 
-def get_file_name(file_name: str, at=-1) -> str:
+def get_file_name(file_name: str, at: int = -1, split: str = '/') -> str:
     """
     Extracts fileName from a file
     :param file_name:
-    :param at: fetch name after splitting files on '/'
+    :param at: fetch name after splitting files on "split"
+    :param split:
     :return:
     """
-    return file_name.split('/')[at].split('.')[0]
+    return file_name.split(split)[at].split('.')[0]
 
 
 def json_load(file: str):
@@ -355,7 +363,7 @@ def as_date(date_: DateTime) -> date:
 
 
 def date_generator(start_date: DateTime, end_date: DateTime,
-                   include_end=True, interval=1) -> Iterable[date]:
+                   include_end: bool = True, interval: int = 1) -> Iterable[date]:
     """
     generates dates between start and end date
     :param start_date:
@@ -397,14 +405,14 @@ def divide_in_chunk(docs: Iterable[T], chunk_size: int) -> Iterable[Chunk]:
     """
     assert chunk_size != 0, 'chunk size can not be zero'
 
-    docs = iter(docs)
+    itr = iter(docs)
     rng = range(chunk_size)
 
-    chunk = _next_chunk(docs, rng)
+    chunk = _next_chunk(itr, rng)
 
     while chunk:
         yield chunk
-        chunk = _next_chunk(docs, rng)
+        chunk = _next_chunk(itr, rng)
 
 
 def _next_chunk(itr: Iterable[T], rng: range) -> Chunk:
