@@ -9,7 +9,7 @@ with open(join(__TOP_LEVEL_DIR, 'requirement.txt')) as f:
 
 setup(
     name='the-utils',
-    version='1.3',
+    version='1.3.1',
     packages=('utility', 'stream'),
     url='https://bitbucket.org/ShivKJ/basics/',
     license='MIT License',
