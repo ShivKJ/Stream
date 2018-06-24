@@ -1,9 +1,9 @@
 # README #
 
-# How do I set up? #
-* workon YOUR_VIRTUAL_EVN ; make sure that you use python3.6 or above
-* pip3 install git+https://github.com/ShivKJ/Basics.git@master
-* to run tests: python3 -m unittest discover -p '\*test\*'
+# How do I set up?
+* Make sure that you use python3.6 or above
+* Inside a virtualenv            : pip3 install the-utils==1.3
+* If you want to install globally: sudo -H pip3 install the-utils==1.3 
 
 ### What is this repository for? ###
 
