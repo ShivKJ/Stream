@@ -8,15 +8,20 @@ with open(join(__TOP_LEVEL_DIR, 'requirement.txt')) as f:
     dependencies = [pkg.strip() for pkg in f]
 
 setup(
-    name='basics',
+    name='the-utils',
     version='1.3',
     packages=('utility', 'stream'),
     url='https://bitbucket.org/ShivKJ/basics/',
     license='MIT License',
     author='Shiv',
     author_email='shivkj001@gmail.com',
-    description='basic utility functions',
+    description='basics utility and stream processing functionality',
+    long_description="basics utility and stream processing functionality",
     install_requires=dependencies,
     python_requires='>=3.6',
-    platforms='ubuntu'
+    platforms='ubuntu',
+    classifiers=(
+        "Programming Language :: Python :: 3.6",
+        "License :: OSI Approved :: MIT License"
+    )
 )
