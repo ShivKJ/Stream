@@ -1,14 +1,11 @@
 # README #
 
 # How do I set up? #
-* clone repo: https://github.com/ShivKJ/Basics.git 
-* workon YOUR_VIRTUAL_EVN ; make sure that you use python3.6
-* cd to cloned repo
-* pip install .
-* to run tests: python -m unittest discover -p '\*test\*'
+* workon YOUR_VIRTUAL_EVN ; make sure that you use python3.6 or above
+* pip3 install git+https://github.com/ShivKJ/Basics.git@master
+* to run tests: python3 -m unittest discover -p '\*test\*'
 
 ### What is this repository for? ###
 
 * This repo provides utility code. Stream API can be used to create chained method which is more readable.
-* 1.2
-
+* 1.3
