@@ -4,9 +4,11 @@ from typing import Any, Callable, Dict, Generic, Iterable, Sequence, TypeVar
 
 from streamAPI.stream.decos import check_stream, close_stream
 from streamAPI.stream.optional import EMPTY, Optional
+from streamAPI.utility import Filter
 from streamAPI.utility.utils import get_functions_clazz, identity
 
 T = TypeVar('T')
+Z = TypeVar('Z')
 
 NIL = object()
 
@@ -35,7 +37,7 @@ class Stream(Generic[T]):
         self._close = is_close
 
     @check_stream
-    def map(self, func) -> 'Stream[T]':
+    def map(self, func: Callable[[T], Z]) -> 'Stream[Z]':
         """
         maps elements of stream.
 
@@ -49,7 +51,7 @@ class Stream(Generic[T]):
         return self
 
     @check_stream
-    def filter(self, predicate) -> 'Stream[T]':
+    def filter(self, predicate: Filter) -> 'Stream[T]':
         """
         Filters elements from Stream.
 
@@ -91,7 +93,7 @@ class Stream(Generic[T]):
         return self
 
     @check_stream
-    def limit(self, n) -> 'Stream[T]':
+    def limit(self, n: int) -> 'Stream[T]':
         """
         limits number of element in stream
         Ex:
@@ -105,7 +107,7 @@ class Stream(Generic[T]):
         return self
 
     @check_stream
-    def peek(self, consumer) -> 'Stream[T]':
+    def peek(self, consumer: Callable[[T], None]) -> 'Stream[T]':
         """
         processes element while streaming.
 
@@ -122,7 +124,7 @@ class Stream(Generic[T]):
         return self
 
     @staticmethod
-    def _consumer_wrapper(consumer):
+    def _consumer_wrapper(consumer: Callable[[T], None]):
         """
         Creates a wrapper around consumer.
         :param consumer:
@@ -138,7 +140,7 @@ class Stream(Generic[T]):
         return func
 
     @check_stream
-    def skip(self, n) -> 'Stream[T]':
+    def skip(self, n: int) -> 'Stream[T]':
         """
         Skips n number of element from Stream
 
@@ -167,7 +169,7 @@ class Stream(Generic[T]):
 
     @check_stream
     @close_stream
-    def partition(self, mapper=bool) -> Dict[bool, Sequence[T]]:
+    def partition(self, mapper: Filter = bool) -> Dict[bool, Sequence[T]]:
         """
         This opeation closes the stream.
 
@@ -313,7 +315,7 @@ class Stream(Generic[T]):
 
     @check_stream
     @close_stream
-    def all(self, predicate=identity) -> bool:
+    def all(self, predicate: Filter = identity) -> bool:
         """
         This opeation closes the Stream.
         returns True if all elements returns True. If there are no element in stream,
@@ -335,7 +337,7 @@ class Stream(Generic[T]):
 
     @check_stream
     @close_stream
-    def any(self, predicate=identity) -> bool:
+    def any(self, predicate: Filter = identity) -> bool:
         """
         This opeation closes the Stream.
         Returns True if atleast one element are True according to given predicate.
@@ -357,7 +359,7 @@ class Stream(Generic[T]):
 
     @check_stream
     @close_stream
-    def none_match(self, predicate=identity) -> bool:
+    def none_match(self, predicate: Filter = identity) -> bool:
         """
         This opeation closes the Stream.
         returns True if no element are true according to predicate.

@@ -16,13 +16,13 @@ setup(
     author='Shiv',
     author_email='shivkj001@gmail.com',
     description='basics utility and stream processing functionality',
-    long_description="basics utility and stream processing functionality",
+    long_description='basics utility and stream processing functionality',
     install_requires=dependencies,
     python_requires='>=3.6',
     platforms='ubuntu',
     classifiers=(
-        "Programming Language :: Python :: 3.6",
-        "License :: OSI Approved :: MIT License",
+        'Programming Language :: Python :: 3.6',
+        'License :: OSI Approved :: MIT License',
         'Topic :: Software Development :: Libraries :: Python Modules'
     )
 )
