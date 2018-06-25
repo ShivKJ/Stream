@@ -1,7 +1,7 @@
 import unittest
 from datetime import date
 
-import utility
+from streamAPI import utility
 
 
 class UtilityTest(unittest.TestCase):

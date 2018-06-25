@@ -1,6 +1,6 @@
 import unittest
 
-from stream import Stream, EMPTY
+from streamAPI.stream import Stream, EMPTY
 
 
 class StreamTest(unittest.TestCase):

@@ -37,7 +37,7 @@ def execution_time(logger_name: str = None, prefix: str = None):
     """
 
     if logger_name is None:
-        from utility.logger import LOGGER_NAME
+        from streamAPI.utility.logger import LOGGER_NAME
         logger_name = LOGGER_NAME
 
     def message(m: str) -> str:
@@ -448,5 +448,5 @@ def get_functions_clazz(module_name: str, script_path: str) -> tuple:
     return tuple(filter_transform(getmembers(module), predicate, itemgetter(0)))
 
 
-if __name__ == 'utility.utils':
+if __name__ == 'streamAPI.utility.utils':
     __all__ = get_functions_clazz(__name__, __file__) + ('csv_ListReader',)

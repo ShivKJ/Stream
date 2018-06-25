@@ -2,9 +2,9 @@ from functools import wraps
 from itertools import accumulate, chain, islice
 from typing import Any, Callable, Dict, Generic, Iterable, Sequence, TypeVar
 
-from stream.decos import check_stream, close_stream
-from stream.optional import EMPTY, Optional
-from utility.utils import get_functions_clazz, identity
+from streamAPI.stream.decos import check_stream, close_stream
+from streamAPI.stream.optional import EMPTY, Optional
+from streamAPI.utility.utils import get_functions_clazz, identity
 
 T = TypeVar('T')
 
@@ -452,5 +452,5 @@ class Stream(Generic[T]):
         return self.count()
 
 
-if __name__ == 'stream.stream':
+if __name__ == 'streamAPI.stream.stream':
     __all__ = get_functions_clazz(__name__, __file__)

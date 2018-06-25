@@ -6,9 +6,9 @@ from typing import Deque, Iterable, Tuple, TypeVar
 
 from decorator import decorator
 
-from stream.decos import cancel_remaining_jobs, function_wrapper
-from stream.stream import Stream
-from utility.utils import divide_in_chunk, filter_transform, get_functions_clazz
+from streamAPI.stream.decos import cancel_remaining_jobs, function_wrapper
+from streamAPI.stream.stream import Stream
+from streamAPI.utility.utils import divide_in_chunk, filter_transform, get_functions_clazz
 
 T = TypeVar('T')
 

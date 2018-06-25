@@ -4,7 +4,7 @@ from logging.handlers import RotatingFileHandler
 from sys import stdout
 
 try:
-    from utility.config import LOG_FILE
+    from streamAPI.utility import LOG_FILE
 except ImportError:
     from warnings import warn
 

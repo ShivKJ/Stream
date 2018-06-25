@@ -8,9 +8,9 @@ with open(join(__TOP_LEVEL_DIR, 'requirement.txt')) as f:
     dependencies = [pkg.strip() for pkg in f]
 
 setup(
-    name='the-utils',
+    name='streamAPI',
     version='1.3.1',
-    packages=('utility', 'stream'),
+    packages=('streamAPI.stream', 'streamAPI.utility'),
     url='https://bitbucket.org/ShivKJ/basics/',
     license='MIT License',
     author='Shiv',

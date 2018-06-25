@@ -4,8 +4,8 @@ from typing import Iterable, Tuple, TypeVar
 
 from decorator import decorator
 
-from stream.exception import StreamClosedException
-from utility.utils import divide_in_chunk
+from streamAPI.stream.exception import StreamClosedException
+from streamAPI.utility.utils import divide_in_chunk
 
 T = TypeVar('T')
 
