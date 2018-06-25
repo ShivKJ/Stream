@@ -1,4 +1,4 @@
-from typing import TypeVar, Generic
+from typing import Generic, TypeVar
 
 T = TypeVar('T')
 
@@ -16,7 +16,7 @@ class Optional(Generic[T]):
 
     def get(self):
         if not self.present():
-            raise ValueError('data is None')
+            raise ValueError('data is not present')
 
         return self.data
 
@@ -34,7 +34,7 @@ class Optional(Generic[T]):
         return self.data
 
     def __str__(self):
-        return str(self.data)
+        return str(self.data) if self is not EMPTY else 'EMPTY'
 
 
 EMPTY = Optional(None)
