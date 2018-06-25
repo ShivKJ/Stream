@@ -4,8 +4,7 @@ from typing import Any, Callable, Dict, Generic, Iterable, Sequence, TypeVar
 
 from streamAPI.stream.decos import check_stream, close_stream
 from streamAPI.stream.optional import EMPTY, Optional
-from streamAPI.utility import Filter
-from streamAPI.utility.utils import get_functions_clazz, identity
+from streamAPI.utility.utils import Filter, get_functions_clazz, identity
 
 T = TypeVar('T')
 Z = TypeVar('Z')
