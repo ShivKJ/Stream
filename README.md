@@ -2,8 +2,9 @@
 
 # How do I set up?
 * Make sure that you use python3.6 or above
-* Inside a virtualenv            : pip3 install the-utils
-* If you want to install globally: sudo -H pip3 install the-utils
+* Inside a virtualenv            : pip3 install streamAPI
+* If you want to install globally: sudo -H pip3 install streamAPI
+* To install via git: pip3 install git+https://github.com/ShivKJ/Basics.git@master
 
 ### What is this repository for? ###
 
