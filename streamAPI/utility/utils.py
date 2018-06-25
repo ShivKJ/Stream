@@ -27,7 +27,7 @@ def execution_time(logger_name: str = None, prefix: str = None):
 
     example:
 
-        @execution_time()
+        @execution_time(prefix='my-app')
         def function(*args,**kwargs):
             pass
 
