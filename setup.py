@@ -9,9 +9,9 @@ with open(join(__TOP_LEVEL_DIR, 'requirement.txt')) as f:
 
 setup(
     name='streamAPI',
-    version='1.3.1',
-    packages=('streamAPI.stream', 'streamAPI.utility'),
-    url='https://bitbucket.org/ShivKJ/basics/',
+    version='1.3.2.0',
+    packages=('streamAPI', 'streamAPI.stream', 'streamAPI.utility'),
+    url='https://github.com/ShivKJ/Basics',
     license='MIT License',
     author='Shiv',
     author_email='shivkj001@gmail.com',
@@ -22,6 +22,7 @@ setup(
     platforms='ubuntu',
     classifiers=(
         "Programming Language :: Python :: 3.6",
-        "License :: OSI Approved :: MIT License"
+        "License :: OSI Approved :: MIT License",
+        'Topic :: Software Development :: Libraries :: Python Modules'
     )
 )

@@ -1,1 +1,2 @@
-from streamAPI import stream, utility
+import streamAPI.stream as stream
+import streamAPI.utility as utility
