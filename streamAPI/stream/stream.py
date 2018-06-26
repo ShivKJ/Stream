@@ -305,6 +305,21 @@ class Stream(Generic[X]):
             students = Stream([Student('a',1),Student('b',2),Student('a', 3)])
             students.mapping(key_mapper=lambda x:x.id, value_mapper=lambda x:x.name)
             -> {1: 'a', 2:'b', 3:'c'}
+        Notice that elements after operated upon by function "key_mapper" must be
+        unique. In case of duplicity, ValueError is thrown.
+
+        for example:
+            out = Stream([1,2,1,3]).mapping(lambda x:x, lambda x:x**2)
+
+        will throw ValueError as a value (1) is present multiple times.
+
+        In case we need to resolve such issues we can pass a function which
+        will take oldValue and newValue and return a value which will be set
+        for the key.
+
+        out = Stream([1,2,3,4,5,6]).mapping(lambda x: x%2 ,lambda x:x, lambda o,n : o + n)
+        print (out) # prints {0:12, 1: 9}
+
 
         :param key_mapper:
         :param value_mapper:
