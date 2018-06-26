@@ -34,7 +34,7 @@ class Optional(Generic[T]):
         return self.data
 
     def __str__(self):
-        return str(self.data) if self is not EMPTY else 'EMPTY'
+        return 'Optional[' + str(self.data) + ']' if self is not EMPTY else 'EMPTY'
 
 
 EMPTY = Optional(None)
