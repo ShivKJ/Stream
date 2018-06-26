@@ -15,6 +15,9 @@ class StreamTest(unittest.TestCase):
         out = Stream(l).mapping(lambda x: x, lambda x: x ** 2, resolve=lambda x, y: x + y)
         self.assertDictEqual(out, {5: 50, 2: 4, 3: 9, 4: 16})
 
+        out = Stream([1, 2, 3, 4, 5, 6]).mapping(lambda x: x % 2, lambda x: x, lambda o, n: o + n)
+        self.assertDictEqual(out, {1: 9, 0: 12})
+
 
 if __name__ == '__main__':
     unittest.main()
