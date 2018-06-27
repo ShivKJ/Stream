@@ -205,7 +205,7 @@ class Stream(Generic[X]):
         """
 
         self._pointer = divide_in_chunk(self._pointer, n)
-        
+
         return self
 
     @check_stream
@@ -371,7 +371,7 @@ class Stream(Generic[X]):
 
     @check_stream
     @close_stream
-    def as_seq(self, seq_clazz: Callable[[Iterable, None], X] = list, **kwargs) -> X:
+    def as_seq(self, seq_clazz: Callable[[Iterable, None], Y] = list, **kwargs) -> Y:
         """
         This operation is one of the terminal operations
         returns Stream elements as sequence, for example as list.
