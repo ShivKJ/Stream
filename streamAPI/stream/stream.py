@@ -97,7 +97,7 @@ class Stream(Generic[X]):
         uses distinct element of for further processing.
 
         Example:
-            stream = Stream([4,1,6,1])
+            stream = Stream([4,1,6,1]).distinct()
             list(stream) -> [1, 4, 6]
 
         Note that, sorting is not guaranteed.
