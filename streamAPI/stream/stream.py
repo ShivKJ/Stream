@@ -209,6 +209,23 @@ class Stream(Generic[X]):
         return self
 
     @check_stream
+    def enumerate(self):
+        """
+        create stream of tuples where first entry is index and
+        another is data itself.
+
+        Example:
+            Stream(range(4,10)).enumerate().as_seq()
+            -> [(0, 4), (1, 5), (2, 6), (3, 7), (4, 8), (5, 9)]
+
+        :return:
+        """
+
+        self._pointer = enumerate(self._pointer)
+
+        return self
+
+    @check_stream
     @close_stream
     def partition(self, mapper: Filter = bool) -> Dict[bool, Sequence[X]]:
         """

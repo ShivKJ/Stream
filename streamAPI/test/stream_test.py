@@ -22,6 +22,10 @@ class StreamTest(unittest.TestCase):
         out = list(Stream(range(10)).batch(3))
         self.assertListEqual(out, [(0, 1, 2), (3, 4, 5), (6, 7, 8), (9,)])
 
+    def test_enumerate(self):
+        out = Stream(range(4, 10)).enumerate().as_seq()
+        self.assertListEqual(out, [(0, 4), (1, 5), (2, 6), (3, 7), (4, 8), (5, 9)])
+
 
 if __name__ == '__main__':
     unittest.main()
