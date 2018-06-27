@@ -91,5 +91,5 @@ class ParallelStream(Stream[T]):
         pass
 
 
-if __name__ == 'stream.parallelStream':
+if __name__ == 'streamAPI.stream.parallelStream':
     __all__ = get_functions_clazz(__name__, __file__)
