@@ -4,7 +4,8 @@ from typing import Any, Callable, Dict, Generic, Iterable, Sequence, TypeVar
 
 from streamAPI.stream.decos import check_stream, close_stream
 from streamAPI.stream.optional import EMPTY, Optional
-from streamAPI.utility.utils import Filter, get_functions_clazz, identity
+from streamAPI.utility.utils import (Filter, divide_in_chunk, get_functions_clazz,
+                                     identity)
 
 X = TypeVar('X')
 Y = TypeVar('Y')
@@ -188,6 +189,23 @@ class Stream(Generic[X]):
         """
 
         self._pointer = chain.from_iterable(self._pointer)
+        return self
+
+    @check_stream
+    def batch(self, n: int):
+        """
+        creates batches of size n from stream.
+
+        Example:
+            Stream(range(10)).batch(3).as_seq()
+            -> [(0, 1, 2), (3, 4, 5), (6, 7, 8), (9,)]
+
+        :param n: batch size
+        :return:
+        """
+
+        self._pointer = divide_in_chunk(self._pointer, n)
+        
         return self
 
     @check_stream

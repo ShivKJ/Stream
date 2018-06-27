@@ -18,6 +18,10 @@ class StreamTest(unittest.TestCase):
         out = Stream([1, 2, 3, 4, 5, 6]).mapping(lambda x: x % 2, lambda x: x, lambda o, n: o + n)
         self.assertDictEqual(out, {1: 9, 0: 12})
 
+    def test_batch(self):
+        out = list(Stream(range(10)).batch(3))
+        self.assertListEqual(out, [(0, 1, 2), (3, 4, 5), (6, 7, 8), (9,)])
+
 
 if __name__ == '__main__':
     unittest.main()
