@@ -2,15 +2,14 @@ from collections import deque
 from concurrent.futures import Executor, Future, ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 from functools import wraps
 from operator import itemgetter
-from typing import Deque, Iterable, Tuple, TypeVar
+from typing import Deque, Iterable, Tuple
 
 from decorator import decorator
 
 from streamAPI.stream.decos import cancel_remaining_jobs, function_wrapper
 from streamAPI.stream.stream import Stream
+from streamAPI.utility.Types import Consumer, Filter, Function, T, X
 from streamAPI.utility.utils import divide_in_chunk, filter_transform, get_functions_clazz
-
-T = TypeVar('T')
 
 
 @decorator
@@ -29,6 +28,7 @@ def _use_exec(func, *args, **kwargs):
 class ParallelStream(Stream[T]):
     def __init__(self, data: Iterable[T]):
         super().__init__(data)
+
         self._concurrent_worker: Deque[Future] = deque()
         self._exec: Executor = None
         self._worker: int = None
@@ -44,10 +44,10 @@ class ParallelStream(Stream[T]):
         return self
 
     @_use_exec
-    def map(self, func, *, use_exec=True) -> 'ParallelStream':
+    def map(self, func: Function[T, X], *, use_exec=True) -> 'ParallelStream[X]':
         pass
 
-    def _predicate_wrapper(self, predicate):
+    def _predicate_wrapper(self, predicate: Filter[T]):
         def _predicate(g):
             return predicate(g), g
 
@@ -64,7 +64,7 @@ class ParallelStream(Stream[T]):
 
         return f
 
-    def filter(self, predicate, *, use_exec=True) -> 'ParallelStream':
+    def filter(self, predicate: Filter[T], *, use_exec=True) -> 'ParallelStream[T]':
         if use_exec and self._exec is not None:
             predicate = self._predicate_wrapper(predicate)
 
@@ -87,7 +87,7 @@ class ParallelStream(Stream[T]):
 
     @cancel_remaining_jobs
     @_use_exec
-    def for_each(self, consumer, *, use_exec=True, single_chunk=True):
+    def for_each(self, consumer: Consumer[T], *, use_exec=True, single_chunk=True):
         pass
 
 

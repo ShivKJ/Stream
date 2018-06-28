@@ -1,22 +1,15 @@
 from abc import abstractmethod
 from functools import wraps
 from itertools import accumulate, chain, islice
-from typing import Any, Callable, Dict, Generic, Iterable, Sequence, TypeVar
+from typing import Any, Dict, Generic, Iterable, Sequence, Union
 
 from streamAPI.stream.decos import check_stream, close_stream
 from streamAPI.stream.optional import EMPTY, Optional
+from streamAPI.utility.Types import BiFunction, Callable, Consumer, Function, T, X, Y, Z
 from streamAPI.utility.utils import (Filter, divide_in_chunk, get_functions_clazz,
                                      identity)
 
-X = TypeVar('X')
-Y = TypeVar('Y')
-Z = TypeVar('Z')
-
 NIL = object()
-
-Func = Callable[[X], Y]
-BiFunc = Callable[[X, Y], Z]
-Consumer = Callable[[X], None]
 
 
 class GroupByValueType(type):
@@ -70,7 +63,7 @@ class Stream(Generic[X]):
         self._close = is_close
 
     @check_stream
-    def map(self, func: Func) -> 'Stream[Y]':
+    def map(self, func: Function[X, Y]) -> 'Stream[Y]':
         """
         maps elements of stream and produces stream of mapped element.
 
@@ -86,7 +79,7 @@ class Stream(Generic[X]):
         return self
 
     @check_stream
-    def filter(self, predicate: Filter) -> 'Stream[X]':
+    def filter(self, predicate: Filter[X]) -> 'Stream[X]':
         """
         Filters elements from Stream.
 
@@ -102,19 +95,42 @@ class Stream(Generic[X]):
         return self
 
     @check_stream
-    def sorted(self, comp=None) -> 'Stream[X]':
+    def sorted(self, comp=None, reverse: bool = False) -> 'Stream[X]':
         """
         Sorts element of Stream.
 
-        Example:
+        Example1:
             stream = Stream([3,1,4,6]).sorted()
             list(stream) -> [1, 3, 4, 6]
 
+            Stream([3,1,4,6]).sorted(reverse=True).as_seq() -> [6, 4, 3, 1]
+
+        Example2:
+            class Student:
+                def __init__(self, name, age):
+                    self.name = name
+                    self.age = age
+
+                def get_age(self):
+                    return self.age
+
+                def __str__(self):
+                    return '[name='+self.name+',age='+str(self.age)+']'
+
+                def __repr__(self):
+                    return str(self)
+
+            students = [Student('A',3),Student('B',1),Student('C',4),Student('D',6)]
+
+            Stream(students).sorted(comp=Student.get_age,reverse=True).as_seq()
+            -> [[name=D,age=6], [name=C,age=4], [name=A,age=3], [name=B,age=1]]
+
         :param comp:
+        :param reverse:
         :return: Stream itself
         """
 
-        self._pointer = sorted(self._pointer, key=comp)
+        self._pointer = sorted(self._pointer, key=comp, reverse=reverse)
         return self
 
     @check_stream
@@ -152,7 +168,7 @@ class Stream(Generic[X]):
         return self
 
     @check_stream
-    def peek(self, consumer: Consumer) -> 'Stream[X]':
+    def peek(self, consumer: Consumer[X]) -> 'Stream[X]':
         """
         processes element while streaming.
 
@@ -170,7 +186,7 @@ class Stream(Generic[X]):
         return self
 
     @staticmethod
-    def _consumer_wrapper(consumer: Consumer):
+    def _consumer_wrapper(consumer: Consumer[X]):
         """
         Creates a wrapper around consumer.
 
@@ -253,7 +269,7 @@ class Stream(Generic[X]):
 
     @check_stream
     @close_stream
-    def partition(self, mapper: Filter = bool) -> Dict[bool, Sequence[X]]:
+    def partition(self, mapper: Filter[X] = bool) -> Dict[bool, Sequence[X]]:
         """
         This operation is one of the terminal operations
         partition elements depending on mapper.
@@ -289,16 +305,35 @@ class Stream(Generic[X]):
         This operation is one of the terminal operations
         finds minimum element of Stream
 
-        Example:
+        Example1:
             stream = Stream([3,1,5])
             item = stream.min().get() -> 1
+
+        Example2:
+            class Student:
+                def __init__(self, name, age):
+                    self.name = name
+                    self.age = age
+
+                def get_age(self):
+                    return self.age
+
+                def __str__(self):
+                    return '[name='+self.name+',age='+str(self.age)+']'
+
+                def __repr__(self):
+                    return str(self)
+
+            students = [Student('A',3),Student('B',1),Student('C',4),Student('D',6)]
+
+            Stream(students).min(comp=Student.get_age) -> Optional[[name=B,age=1]]
 
         :param comp:
         :return:
         """
 
         try:
-            return min(self._pointer, key=comp) if comp else min(self._pointer)
+            return Optional(min(self._pointer, key=comp) if comp else min(self._pointer))
         except ValueError:
             return EMPTY
 
@@ -309,9 +344,28 @@ class Stream(Generic[X]):
         This operation is one of the terminal operations.
         finds maximum element of Stream
 
-        Example:
+        Example1:
             stream = Stream([3,1,5])
             item = stream.max().get() -> 5
+
+        Example2:
+            class Student:
+                def __init__(self, name, age):
+                    self.name = name
+                    self.age = age
+
+                def get_age(self):
+                    return self.age
+
+                def __str__(self):
+                    return '[name='+self.name+',age='+str(self.age)+']'
+
+                def __repr__(self):
+                    return str(self)
+
+            students = [Student('A',3),Student('B',1),Student('C',4),Student('D',6)]
+
+            Stream(students).max(comp=Student.get_age) -> Optional[[name=D,age=6]]
 
         :param comp:
         :return:
@@ -324,7 +378,7 @@ class Stream(Generic[X]):
 
     @check_stream
     @close_stream
-    def group_by(self, key_hasher, value_mapper: Func = identity,
+    def group_by(self, key_hasher, value_mapper: Function[X, Y] = identity,
                  value_container_clazz: GroupByValueType = ListType) -> Dict[Any, Sequence[Y]]:
         """
         This operation is one of the terminal operations
@@ -371,7 +425,9 @@ class Stream(Generic[X]):
 
     @check_stream
     @close_stream
-    def mapping(self, key_mapper, value_mapper: Func = identity, resolve: BiFunc = None) -> dict:
+    def mapping(self, key_mapper: Function[X, T],
+                value_mapper: Function[X, Y] = identity,
+                resolve: BiFunction[Y, Y, Z] = None) -> Dict[T, Union[Y, Z]]:
         """
         This operation is one of the terminal operations
         creates mapping from stream element.
@@ -423,7 +479,7 @@ class Stream(Generic[X]):
 
     @check_stream
     @close_stream
-    def as_seq(self, seq_clazz: Callable[[Iterable, None], Y] = list, **kwargs) -> Y:
+    def as_seq(self, seq_clazz: Callable[[Iterable[X], None], Y] = list, **kwargs) -> Y:
         """
         This operation is one of the terminal operations
         returns Stream elements as sequence, for example as list.
@@ -443,7 +499,7 @@ class Stream(Generic[X]):
 
     @check_stream
     @close_stream
-    def all(self, predicate: Filter = identity) -> bool:
+    def all(self, predicate: Filter[X] = identity) -> bool:
         """
         This operation is one of the terminal operations
         returns True if all elements returns True. If there are no element in stream,
@@ -470,7 +526,7 @@ class Stream(Generic[X]):
 
     @check_stream
     @close_stream
-    def any(self, predicate: Filter = identity) -> bool:
+    def any(self, predicate: Filter[X] = identity) -> bool:
         """
         This operation is one of the terminal operations
         Returns True if at-least one element are True according to given predicate.
@@ -497,7 +553,7 @@ class Stream(Generic[X]):
 
     @check_stream
     @close_stream
-    def none_match(self, predicate: Filter = identity) -> bool:
+    def none_match(self, predicate: Filter[X] = identity) -> bool:
         """
         This operation is one of the terminal operations
         returns True if no element are true according to predicate.
@@ -545,7 +601,7 @@ class Stream(Generic[X]):
 
     @check_stream
     @close_stream
-    def for_each(self, consumer: Consumer):
+    def for_each(self, consumer: Consumer[X]):
         """
         This operation is one of the terminal operations
         consumes each element from stream.
@@ -567,7 +623,7 @@ class Stream(Generic[X]):
 
     @check_stream
     @close_stream
-    def reduce(self, bi_func: BiFunc, initial_point: X = NIL) -> Optional[Z]:
+    def reduce(self, bi_func: BiFunction[X, X, Y], initial_point: X = NIL) -> Optional[Y]:
         """
         This operation is one of the terminal operations
         reduces stream element to produce an element.

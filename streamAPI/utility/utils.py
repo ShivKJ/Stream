@@ -7,7 +7,7 @@ from logging import getLogger
 from operator import itemgetter
 from os import walk
 from os.path import abspath, join
-from typing import Callable, Dict, Iterable, List, Tuple, TypeVar, Union
+from typing import Callable, Dict, Iterable, List, Tuple
 
 from dateutil.parser import parse
 from psycopg2 import connect
@@ -15,8 +15,7 @@ from psycopg2.extensions import connection
 from psycopg2.extras import DictConnection
 from time import time
 
-T = TypeVar('T')
-Z = TypeVar('Z')
+from streamAPI.utility.Types import DateTime, Filter, Function, PathGenerator, T, X
 
 
 # --------------------------- The decorators -----------------------------------
@@ -219,12 +218,11 @@ class DB:
 
 
 # -----------------------------------------------------
-Filter = Callable[[T], bool]
 
 
 def filter_transform(data_stream: Iterable[T],
-                     condition: Filter,
-                     transform: Callable[[T], Z]) -> Iterable[Z]:
+                     condition: Filter[T],
+                     transform: Function[T, X]) -> Iterable[X]:
     """
     given a list filters elements and transform filtered element
     :param data_stream:
@@ -244,11 +242,8 @@ def identity(f: T) -> T:
     return f
 
 
-PathGenerator = Iterable[str]
-
-
 def _files_inside_dir(dir_name: str,
-                      match: Filter = _always_true,
+                      match: Filter[str] = _always_true,
                       append_full_path=True) -> PathGenerator:
     """
     recursively finds all files inside dir and in its subdir recursively.
@@ -263,12 +258,12 @@ def _files_inside_dir(dir_name: str,
         dir_name = abspath(dir_name)
 
     for dir_path, _, files in walk(dir_name):
-        dir_joiner = partial(join, dir_path)
+        dir_joiner: Function[str, str] = partial(join, dir_path)
         yield from filter(match, map(dir_joiner, files))
 
 
 def files_inside_dir(dir_name: str,
-                     match: Filter = _always_true,
+                     match: Filter[str] = _always_true,
                      as_type: Callable[[PathGenerator], T] = list,
                      append_full_path=True) -> T:
     """
@@ -337,10 +332,10 @@ def csv_itr(file: str, as_dict=True) -> Iterable[Dict[str, str]]:
         yield from (DictReader(f) if as_dict else ListReader(f))
 
 
-csv_ListReader: Callable[[str], Iterable[List[str]]] = partial(csv_itr, as_dict=False)
+csv_ListReader: Function[str, Iterable[List[str]]] = partial(csv_itr, as_dict=False)
+
 
 # -----------------------------------------------------
-DateTime = Union[str, date, datetime]
 
 
 def as_date(date_: DateTime) -> date:
@@ -394,7 +389,7 @@ def date_generator(start_date: DateTime, end_date: DateTime,
 Chunk = Tuple[T, ...]
 
 
-def divide_in_chunk(docs: Iterable[T], chunk_size: int) -> Iterable[Chunk]:
+def divide_in_chunk(docs: Iterable[T], chunk_size: int) -> Iterable[Chunk[T]]:
     """
     divides list of elements in fixed size of chunks.
     Last chunk can have elements less than chunk_size.
@@ -415,7 +410,7 @@ def divide_in_chunk(docs: Iterable[T], chunk_size: int) -> Iterable[Chunk]:
         chunk = _next_chunk(itr, rng)
 
 
-def _next_chunk(itr: Iterable[T], rng: range) -> Chunk:
+def _next_chunk(itr: Iterable[T], rng: range) -> Chunk[T]:
     """
     fetching one chunk from itr using rng class object
     :param itr:
