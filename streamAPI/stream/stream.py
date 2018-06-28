@@ -1,13 +1,16 @@
 from abc import abstractmethod
 from functools import wraps
-from itertools import accumulate, chain, islice
-from typing import Any, Dict, Generic, Iterable, Sequence, Union
+from itertools import (accumulate, chain, cycle, dropwhile, islice,
+                       takewhile, zip_longest)
+from typing import (Any, Dict, Generic, Iterable, Sequence, Tuple,
+                    Union)
 
 from streamAPI.stream.decos import check_stream, close_stream
 from streamAPI.stream.optional import EMPTY, Optional
-from streamAPI.utility.Types import BiFunction, Callable, Consumer, Function, T, X, Y, Z
-from streamAPI.utility.utils import (Filter, divide_in_chunk, get_functions_clazz,
-                                     identity)
+from streamAPI.utility.Types import (BiFunction, Callable, Consumer,
+                                     Function, T, X, Y, Z)
+from streamAPI.utility.utils import (Filter, divide_in_chunk,
+                                     get_functions_clazz, identity)
 
 NIL = object()
 
@@ -266,6 +269,76 @@ class Stream(Generic[X]):
         self._pointer = enumerate(self._pointer)
 
         return self
+
+    @check_stream
+    def take_while(self, predicate: Filter[X]) -> 'Stream[X]':
+        """
+        processes the element of stream till the predicate returns True.
+
+        Stream(range(10)).till(lambda x:x<5).as_seq() -> [0,1,2,3,4]
+        :param predicate:
+        :return:
+        """
+
+        self._pointer = takewhile(predicate, self._pointer)
+
+        return self
+
+    @check_stream
+    def drop_while(self, predicate: Filter[X]) -> 'Stream[X]':
+        """
+        drops elements until predicate returns False
+
+        stream.Stream(range(10)).drop_while(lambda x:x<5).as_seq() -> [5, 6, 7, 8, 9]
+
+        :param predicate:
+        :return:
+        """
+
+        self._pointer = dropwhile(predicate, self._pointer)
+        return self
+
+    @check_stream
+    def zip(self, itr: Iterable[Y], after=True) -> 'Stream[Tuple]':
+        """
+
+        :param itr:
+        :param after
+        :return:
+        """
+        if after:
+            self._pointer = zip(self._pointer, itr)
+        else:
+            self._pointer = zip(itr, self._pointer)
+
+        return self
+
+    @check_stream
+    def zip_longest(self, itr: Iterable[Y], after=True, fillvalue=None) -> 'Stream[Tuple]':
+        """
+
+        :param itr:
+        :param after:
+        :param fillvalue:
+        :return:
+        """
+
+        if after:
+            self._pointer = zip_longest(self._pointer, itr, fillvalue=fillvalue)
+        else:
+            self._pointer = zip_longest(itr, self._pointer, fillvalue=fillvalue)
+
+        return self
+
+    @check_stream
+    def cycle(self, itr: Iterable[Y], after=True) -> 'Stream[Tuple]':
+        """
+
+        :param itr:
+        :param after:
+        :return:
+        """
+        return self.zip(cycle(itr), after=after)
 
     @check_stream
     @close_stream
