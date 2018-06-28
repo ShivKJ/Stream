@@ -1,6 +1,6 @@
 import unittest
 
-from streamAPI.stream import EMPTY, Stream
+from streamAPI.stream import EMPTY, ListType, SetType, Stream
 
 
 class StreamTest(unittest.TestCase):
@@ -25,6 +25,19 @@ class StreamTest(unittest.TestCase):
     def test_enumerate(self):
         out = Stream(range(4, 10)).enumerate().as_seq()
         self.assertListEqual(out, [(0, 4), (1, 5), (2, 6), (3, 7), (4, 8), (5, 9)])
+
+    def test_group_by(self):
+        out = Stream(range(10)).group_by(key_hasher=lambda x: x % 3)
+        self.assertDictEqual(out, {0: [0, 3, 6, 9], 1: [1, 4, 7], 2: [2, 5, 8]})
+
+        out = Stream(range(10)).group_by(key_hasher=lambda x: x % 3, value_mapper=lambda x: x ** 2)
+        self.assertDictEqual(out, {0: [0, 9, 36, 81], 1: [1, 16, 49], 2: [4, 25, 64]})
+
+        out = Stream([1, 2, 3, 4, 2, 4]).group_by(lambda x: x % 2, value_container_clazz=ListType)
+        self.assertDictEqual(out, {1: [1, 3], 0: [2, 4, 2, 4]})
+
+        out = Stream([1, 2, 3, 4, 2, 4]).group_by(lambda x: x % 2, value_container_clazz=SetType)
+        self.assertDictEqual(out, {1: {1, 3}, 0: {2, 4}})
 
 
 if __name__ == '__main__':

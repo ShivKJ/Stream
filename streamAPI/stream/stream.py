@@ -1,3 +1,4 @@
+from abc import abstractmethod
 from functools import wraps
 from itertools import accumulate, chain, islice
 from typing import Any, Callable, Dict, Generic, Iterable, Sequence, TypeVar
@@ -16,6 +17,31 @@ NIL = object()
 Func = Callable[[X], Y]
 BiFunc = Callable[[X, Y], Z]
 Consumer = Callable[[X], None]
+
+
+class GroupByValueType(type):
+    def __init__(cls, *args, **kwargs):
+        type.__init__(cls, *args, **kwargs)
+
+    @abstractmethod
+    def add(self, o):
+        pass
+
+
+class ListType(list, metaclass=GroupByValueType):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def add(self, o):
+        return self.append(o)
+
+
+class SetType(set, metaclass=GroupByValueType):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    add = set.add
 
 
 class Stream(Generic[X]):
@@ -298,31 +324,50 @@ class Stream(Generic[X]):
 
     @check_stream
     @close_stream
-    def group_by(self, key_hasher, value_mapper: Func = identity) -> Dict[Any, Sequence[Y]]:
+    def group_by(self, key_hasher, value_mapper: Func = identity,
+                 value_container_clazz: GroupByValueType = ListType) -> Dict[Any, Sequence[Y]]:
         """
         This operation is one of the terminal operations
         group by stream element using key_hasher.
 
         Example1:
             stream  = Stream(range(10))
-            stream.group_by(key_hasher=lambda x: x%3) -> {0:[0, 3, 6, 9], 1:[1, 4, 7], 2:{2, 5, 8}}
+            stream.group_by(key_hasher=lambda x: x%3) -> {0:[0, 3, 6, 9], 1:[1, 4, 7], 2:[2, 5, 8]}
 
         Example2:
             stream  = Stream(range(10))
-            stream.group_by(key_hasher=lambda x: x%3,value_mapper=lambda x: x**2
-            ) -> {0:[0, 9, 36, 81], 1:[1, 16, 49], 2:{4, 25, 64}}
+            stream.group_by(key_hasher=lambda x: x%3,value_mapper=lambda x: x**2)
+            -> {0:[0, 9, 36, 81], 1:[1, 16, 49], 2:[4, 25, 64]}
+
+        Example3:
+            out = Stream([1, 2, 3, 4, 2, 4]).group_by(lambda x:x%2,value_container_type=ListType)
+            -> {1: [1, 3], 0: [2, 4, 2, 4]}
+
+            out =Stream([1, 2, 3, 4, 2, 4]).group_by(lambda x:x%2,value_container_type=SetType)
+            -> {1: {1, 3}, 0: {2, 4}}
 
         :param key_hasher:
         :param value_mapper:
+        :param value_container_clazz:
         :return:
         """
 
         out = {}
 
         for elem in self._pointer:
-            Stream._update(out, key_hasher(elem), value_mapper(elem))
+            Stream._update(out, key_hasher(elem), value_mapper(elem), value_container_clazz)
 
         return out
+
+    @staticmethod
+    def _update(d: dict, k, v: X, value_container_clazz: GroupByValueType):
+        if k not in d:
+            pt = value_container_clazz()
+            d[k] = pt
+        else:
+            pt = d[k]
+
+        pt.add(v)
 
     @check_stream
     @close_stream
@@ -375,16 +420,6 @@ class Stream(Generic[X]):
                 out[k] = value_mapper(elem)
 
         return out
-
-    @staticmethod
-    def _update(d: dict, k, v):
-        if k not in d:
-            pt = []
-            d[k] = pt
-        else:
-            pt = d[k]
-
-        pt.append(v)
 
     @check_stream
     @close_stream

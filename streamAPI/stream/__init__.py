@@ -1,8 +1,8 @@
 from streamAPI.stream import decos
 from streamAPI.stream.exception import StreamClosedException
-from streamAPI.stream.optional import Optional, EMPTY
-from streamAPI.stream.parallelStream import ParallelStream
-from streamAPI.stream.stream import Stream
+from streamAPI.stream.optional import EMPTY, Optional
+from streamAPI.stream.parallelStream import *
+from streamAPI.stream.stream import *
 
 del decos
 del exception
