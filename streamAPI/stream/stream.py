@@ -16,6 +16,27 @@ NIL = object()
 
 
 class GroupByValueType(type):
+    """
+    In group_by method of Stream class, we may want to
+    used customised container type for value holding.
+
+    For example:
+        Stream([1,2,5,1,3,4,2]).group_by(lambda x:x%2)
+        -> {1: [1, 5, 1, 3], 0: [2, 4, 2]}
+
+        Here value container class is List.
+
+        If we want value container class to be Set
+        Stream([1, 2, 5, 1, 3, 4, 2]).group_by(lambda x: x % 2, value_container_clazz=SetType)
+        -> {1: {1, 3, 5}, 0: {2, 4}}
+
+    By default, value container class will be of Type List. In case we want it be of
+    specific type, then the class has to implement "add" method. This can be fulfilled by
+    making GroupByValueType class as a meta class.
+
+    Here we implement two Class ListType and SetType.
+    """
+
     def __init__(cls, *args, **kwargs):
         type.__init__(cls, *args, **kwargs)
 
@@ -25,6 +46,13 @@ class GroupByValueType(type):
 
 
 class ListType(list, metaclass=GroupByValueType):
+    """
+    This is the default choice of class for holding value after "group_by"
+    operation on Stream class object.
+
+    Stream([1,2,5,1,3,4,2]).group_by(lambda x:x%2,value_container_clazz=ListType)
+    -> {1: [1, 5, 1, 3], 0: [2, 4, 2]}
+    """
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -34,6 +62,11 @@ class ListType(list, metaclass=GroupByValueType):
 
 
 class SetType(set, metaclass=GroupByValueType):
+    """
+    Stream([1,2,5,1,3,4,2]).group_by(lambda x:x%2,value_container_clazz=SetType)
+    -> {1: {1, 3, 5}, 0: {2, 4}}
+    """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -41,6 +74,82 @@ class SetType(set, metaclass=GroupByValueType):
 
 
 class Stream(Generic[X]):
+    """
+    This class can be used to create pipeline operation on given
+    iterable object.
+    There are two type of operation that can be performed on Stream:
+    1) Intermediate (i.e. map, flat_map, filter, peek, distinct, sort, batch, cycle, take_while, drop_while etc.)
+    2) Terminal (min, max, as_seq, group_by, partition, all, any, none_match, for_each)
+
+    Until terminal operation is called, no execution takes place.
+    Some of the examples are given below.
+    
+    Example:
+        class Student:
+            def __init__(self, name, age, sex):
+                self.name = name
+                self.age = age
+                self.sex = sex
+
+            def get_age(self):
+                return self.age
+
+            def __str__(self):
+                return '[name='+self.name+',age='+str(self.age)+',sex='+('Male' if self.sex else 'Female')+']'
+
+            def __repr__(self):
+                return str(self)
+
+        students = [Student('A',10,True),
+                    Student('B',8,True),
+                    Student('C',11,False),
+                    Student('D',17,True),
+                    Student('D',25,False),
+                    Student('F',9,False),
+                    Student('G',29,True)]
+
+        Stream(students).filter(lambda x:x.age<20).sort(lambda x:x.age).as_seq()
+        -> [[name=B,age=8,sex=Male],
+            [name=F,age=9,sex=Female],
+            [name=A,age=10,sex=Male],
+            [name=C,age=11,sex=Female],
+            [name=D,age=17,sex=Male]]
+
+        Stream(students).filter(lambda x:x.age<20).partition(lambda x:x.sex)
+        -> {True: [[name=A,age=10,sex=Male],
+                   [name=B,age=8,sex=Male],
+                   [name=D,age=17,sex=Male]],
+            False: [[name=C,age=11,sex=Female],
+                    [name=F,age=9,sex=Female]]}
+
+        Stream(range(10)).map(lambda x: x**3 - x**2).filter(lambda x: x%3 == 0).distinct().limit(3).as_seq()
+        ->  [0, 294, 648] # distinct can change the stream data ordering.
+
+        Stream(range(10)).batch(3).as_seq() -> [(0, 1, 2), (3, 4, 5), (6, 7, 8), (9,)]
+
+        Stream([(0, 1, 2), (3, 4, 5), (6, 7, 8), (9,)]).flat_map().limit(6).as_seq()
+        -> [0, 1, 2, 3, 4, 5]
+
+        Stream(range(10)).take_while(lambda x:x<5).as_seq() # similar to while loop
+        -> [0, 1, 2, 3, 4]
+
+        Stream(range(10)).drop_while(lambda x:x<5).as_seq()
+        -> [5, 6, 7, 8, 9]
+
+        Stream(range(3,9)).zip(range(4)).as_seq() -> [(3, 0), (4, 1), (5, 2), (6, 3)]
+
+        Stream(range(3,9)).zip(range(4),after=False).as_seq() -> [(0, 3), (1, 4), (2, 5), (3, 6)]
+
+        Stream(range(3,9)).zip_longest(range(4),fillvalue=-1).as_seq()
+        -> [(3, 0), (4, 1), (5, 2), (6, 3), (7, -1), (8, -1)]
+
+        Stream(range(3,9)).zip_longest(range(4),after=False,fillvalue=-1).as_seq()
+        -> [(0, 3), (1, 4), (2, 5), (3, 6), (-1, 7), (-1, 8)]
+
+        Stream(range(10)).map(lambda x:x**2).reduce(lambda x,y:x+y) # sum of squares
+        -> Optional[285]
+
+    """
 
     def __init__(self, data: Iterable[X]):
         self._pointer = data
@@ -98,15 +207,15 @@ class Stream(Generic[X]):
         return self
 
     @check_stream
-    def sorted(self, comp=None, reverse: bool = False) -> 'Stream[X]':
+    def sort(self, comp=None, reverse: bool = False) -> 'Stream[X]':
         """
         Sorts element of Stream.
 
         Example1:
-            stream = Stream([3,1,4,6]).sorted()
+            stream = Stream([3,1,4,6]).sort()
             list(stream) -> [1, 3, 4, 6]
 
-            Stream([3,1,4,6]).sorted(reverse=True).as_seq() -> [6, 4, 3, 1]
+            Stream([3,1,4,6]).sort(reverse=True).as_seq() -> [6, 4, 3, 1]
 
         Example2:
             class Student:
@@ -274,14 +383,15 @@ class Stream(Generic[X]):
     def take_while(self, predicate: Filter[X]) -> 'Stream[X]':
         """
         processes the element of stream till the predicate returns True.
+        It is similar to "while" keyword of python.
 
-        Stream(range(10)).till(lambda x:x<5).as_seq() -> [0,1,2,3,4]
+        Stream(range(10)).till(lambda x:x < 5).as_seq() -> [0,1,2,3,4]
+
         :param predicate:
         :return:
         """
 
         self._pointer = takewhile(predicate, self._pointer)
-
         return self
 
     @check_stream
@@ -289,7 +399,7 @@ class Stream(Generic[X]):
         """
         drops elements until predicate returns False
 
-        stream.Stream(range(10)).drop_while(lambda x:x<5).as_seq() -> [5, 6, 7, 8, 9]
+        stream.Stream(range(10)).drop_while(lambda x : x < 5).as_seq() -> [5, 6, 7, 8, 9]
 
         :param predicate:
         :return:
@@ -301,11 +411,31 @@ class Stream(Generic[X]):
     @check_stream
     def zip(self, itr: Iterable[Y], after=True) -> 'Stream[Tuple]':
         """
+        zips stream with another Iterable object.
+
+        We can specify whether to zip iterable after the stream of before
+        the stream by using "after".
+
+        zip operation will produce a stream which will be exhausted if either
+        itr has been exhausted or underlying stream is exhausted.
+
+        Example:
+            Stream(range(100, 100000)).zip(range(5)).as_seq()
+            -> [(100, 0), (101, 1), (102, 2), (103, 3), (104, 4)]
+
+            Stream(range(5)).zip(range(100, 100000)).as_seq()
+            -> [(0, 100), (1, 101), (2, 102), (3, 103), (4, 104)]
+
+            Stream(range(20, 30)).zip(range(5),after=False).as_seq()
+            # data from range(5) will be used as first entry of tuple created by zipping
+            # stream with iterable
+            -> [(0, 20), (1, 21), (2, 22), (3, 23), (4, 24)]
 
         :param itr:
         :param after
         :return:
         """
+
         if after:
             self._pointer = zip(self._pointer, itr)
         else:
@@ -316,6 +446,16 @@ class Stream(Generic[X]):
     @check_stream
     def zip_longest(self, itr: Iterable[Y], after=True, fillvalue=None) -> 'Stream[Tuple]':
         """
+        Unlike zip method which limits resultant stream depending on smaller iterable,
+        zip_longest allow stream generator even though smaller iterable has been exhausted.
+        default filling value will be used from "fillvalue".
+
+        Example:
+            Stream(range(11, 13)).zip_longest(range(5)).as_seq()
+            -> [(11, 0), (12, 1), (None, 2), (None, 3), (None, 4)]
+
+            Stream(range(11, 13)).zip_longest(range(5),after=False,fillvalue=-1).as_seq()
+            -> [(0, 11), (1, 12), (2, -1), (3, -1), (4, -1)]
 
         :param itr:
         :param after:
@@ -333,11 +473,17 @@ class Stream(Generic[X]):
     @check_stream
     def cycle(self, itr: Iterable[Y], after=True) -> 'Stream[Tuple]':
         """
+        Repeats iterable "itr" with stream until stream is exhausted.
+
+        Example:
+            Stream(range(11, 16)).cycle(range(3),after=False).as_seq()
+            -> [(0, 11), (1, 12), (2, 13), (0, 14), (1, 15)]
 
         :param itr:
         :param after:
         :return:
         """
+
         return self.zip(cycle(itr), after=after)
 
     @check_stream
