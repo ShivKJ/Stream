@@ -363,7 +363,7 @@ class Stream(Generic[X]):
         return self
 
     @check_stream
-    def enumerate(self):
+    def enumerate(self, start=0):
         """
         create stream of tuples where first entry is index and
         another is data itself.
@@ -372,10 +372,14 @@ class Stream(Generic[X]):
             Stream(range(4,10)).enumerate().as_seq()
             -> [(0, 4), (1, 5), (2, 6), (3, 7), (4, 8), (5, 9)]
 
+            Stream(range(4,10)).enumerate(10).as_seq()
+             [(10, 4), (11, 5), (12, 6), (13, 7), (14, 8), (15, 9)]
+
+        :param start
         :return:
         """
 
-        self._pointer = enumerate(self._pointer)
+        self._pointer = enumerate(self._pointer, start=start)
 
         return self
 
