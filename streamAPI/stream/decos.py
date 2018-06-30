@@ -1,11 +1,8 @@
-from concurrent.futures import Future, as_completed
-from functools import wraps
-from typing import Iterable, Tuple, TypeVar
+from typing import TypeVar
 
 from decorator import decorator
 
 from streamAPI.stream.exception import StreamClosedException
-from streamAPI.utility.utils import divide_in_chunk
 
 T = TypeVar('T')
 
@@ -51,28 +48,3 @@ def cancel_remaining_jobs(func, *args, **kwargs):
         worker.cancel()
 
     return out
-
-
-def function_wrapper(self, func, single_chunk=False):
-    """
-    provides a wrapper around given function.
-    :param self:
-    :param func:
-    :param single_chunk: if False, the run jobs in chunks defined as self._worker else all
-            jobs are submitted.
-    :return:
-    """
-
-    @wraps(func)
-    def f(generator: Iterable[T]):
-        if single_chunk is False:
-            generator = divide_in_chunk(generator, self._worker)
-        else:
-            generator = (generator,)
-
-        for gs in generator:
-            container: Tuple[Future] = tuple(self._exec.submit(func, g) for g in gs)
-            self._concurrent_worker.extend(container)
-            yield from as_completed(container)
-
-    return f
