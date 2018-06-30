@@ -1,11 +1,11 @@
 from collections import deque
 from concurrent.futures import (Executor, Future, ProcessPoolExecutor as PPE,
                                 ThreadPoolExecutor as TPE, as_completed)
-from functools import partial
+from functools import partial, wraps
 from operator import itemgetter
 from typing import Deque, Iterable
 
-from streamAPI.stream.decos import cancel_remaining_jobs, check_stream
+from streamAPI.stream.decos import check_stream
 from streamAPI.stream.stream import Stream
 from streamAPI.utility.Types import (Filter, Function, T, X)
 from streamAPI.utility.utils import get_functions_clazz
@@ -47,13 +47,17 @@ class Exec(Stream[T]):
         return self._exec.submit(func, g)
 
     @staticmethod
-    def _stop_all_jobs(func, self: 'Exec', *args, **kwargs):
-        out = func(*args, **kwargs)
+    def _stop_all_jobs(func):
+        @wraps(func)
+        def f(self: 'Exec', *args, **kwargs):
+            out = func(self, *args, **kwargs)
 
-        for worker in self._registered_jobs:
-            worker.cancel()
+            for worker in self._registered_jobs:
+                worker.cancel()
 
-        return out
+            return out
+
+        return f
 
 
 class ParallelStream(Exec[T]):
@@ -86,21 +90,21 @@ class ParallelStream(Exec[T]):
         return self
 
     # terminal operation will trigger cancelling of submitted unnecessary jobs.
-    partition = cancel_remaining_jobs(Stream.partition)
-    count = cancel_remaining_jobs(Stream.count)
-    min = cancel_remaining_jobs(Stream.min)
-    max = cancel_remaining_jobs(Stream.max)
-    group_by = cancel_remaining_jobs(Stream.group_by)
-    mapping = cancel_remaining_jobs(Stream.mapping)
-    as_seq = cancel_remaining_jobs(Stream.as_seq)
-    all = cancel_remaining_jobs(Stream.all)
-    any = cancel_remaining_jobs(Stream.any)
-    none_match = cancel_remaining_jobs(Stream.none_match)
-    find_first = cancel_remaining_jobs(Stream.find_first)
-    reduce = cancel_remaining_jobs(Stream.reduce)
-    done = cancel_remaining_jobs(Stream.done)
-    for_each = cancel_remaining_jobs(Stream.for_each)
-    __iter__ = cancel_remaining_jobs(Stream.__iter__)
+    partition = Exec._stop_all_jobs(Stream.partition)
+    count = Exec._stop_all_jobs(Stream.count)
+    min = Exec._stop_all_jobs(Stream.min)
+    max = Exec._stop_all_jobs(Stream.max)
+    group_by = Exec._stop_all_jobs(Stream.group_by)
+    mapping = Exec._stop_all_jobs(Stream.mapping)
+    as_seq = Exec._stop_all_jobs(Stream.as_seq)
+    all = Exec._stop_all_jobs(Stream.all)
+    any = Exec._stop_all_jobs(Stream.any)
+    none_match = Exec._stop_all_jobs(Stream.none_match)
+    find_first = Exec._stop_all_jobs(Stream.find_first)
+    reduce = Exec._stop_all_jobs(Stream.reduce)
+    done = Exec._stop_all_jobs(Stream.done)
+    for_each = Exec._stop_all_jobs(Stream.for_each)
+    __iter__ = Exec._stop_all_jobs(Stream.__iter__)
 
 
 if __name__ == 'streamAPI.stream.parallelStream':
