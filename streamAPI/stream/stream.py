@@ -260,8 +260,22 @@ class Stream(Generic[X]):
         :return:  Stream itself
         """
 
-        self._pointer = set(self._pointer)
+        self._pointer = Stream._yield_distinct(self._pointer)
         return self
+
+    @staticmethod
+    def _yield_distinct(itr: Iterable[X]):
+        """
+        yield distinct elements from a given iterable
+        :param itr:
+        :return:
+        """
+        consumer_items = set()
+
+        for item in itr:
+            if item not in consumer_items:
+                yield item
+                consumer_items.add(item)
 
     @check_stream
     def limit(self, n: int) -> 'Stream[X]':
@@ -297,19 +311,44 @@ class Stream(Generic[X]):
         self._pointer = Stream._consumer_wrapper(consumer)(self._pointer)
         return self
 
+    @check_stream
+    def peek_after_each(self, consumer: Consumer[X], n: int) -> 'Stream[X]':
+        """
+        processes element while streaming. Consumer is called after each nth item.
+        Example:
+            def f(x): return 2*x
+
+            stream = Stream(range(10)).peek_after_each(print,3).map(f)
+            list(stream) first prints "2\n5\n8" and then makes a list
+            [0, 2, 4, 6, 8, 10, 12, 14, 16, 18]
+
+        :param consumer:
+        :param n:
+        :return: Stream itself
+        """
+
+        assert n > 0, 'n should be positive'
+        self._pointer = Stream._consumer_wrapper(consumer, n=n)(self._pointer)
+        return self
+
     @staticmethod
-    def _consumer_wrapper(consumer: Consumer[X]):
+    def _consumer_wrapper(consumer: Consumer[X], n: int = 1):
         """
         Creates a wrapper around consumer.
 
         :param consumer:
+        :param n
         :return:
         """
 
         @wraps(consumer)
         def func(generator: Iterable[X]) -> Iterable[X]:
-            for g in generator:
-                consumer(g)
+            one_to_n = cycle(range(1, n + 1))  # cycling numbers from 1 up to n
+
+            for idx, g in zip(one_to_n, generator):
+                if idx == n:
+                    consumer(g)
+
                 yield g
 
         return func

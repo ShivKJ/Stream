@@ -77,5 +77,11 @@ class Optional(Generic[T]):
     def __repr__(self):
         return str(self)
 
+    def __eq__(self, other: 'Optional[T]') -> bool:
+        return self is other or (other is not EMPTY and self.data == other.data)
+
+    def __hash__(self):
+        return hash(self.data) if self is not EMPTY else 0
+
 
 EMPTY = Optional(None)
