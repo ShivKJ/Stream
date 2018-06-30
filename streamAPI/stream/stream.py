@@ -413,7 +413,7 @@ class Stream(Generic[X]):
         return self
 
     @check_stream
-    def zip(self, itr: Iterable[Y], after=True) -> 'Stream[Tuple]':
+    def zip(self, *itr: Iterable[Y], after=True) -> 'Stream[Tuple]':
         """
         zips stream with another Iterable object.
 
@@ -441,14 +441,14 @@ class Stream(Generic[X]):
         """
 
         if after:
-            self._pointer = zip(self._pointer, itr)
+            self._pointer = zip(self._pointer, *itr)
         else:
-            self._pointer = zip(itr, self._pointer)
+            self._pointer = zip(*itr, self._pointer)
 
         return self
 
     @check_stream
-    def zip_longest(self, itr: Iterable[Y], after=True, fillvalue=None) -> 'Stream[Tuple]':
+    def zip_longest(self, *itr: Iterable[Y], after=True, fillvalue=None) -> 'Stream[Tuple]':
         """
         Unlike zip method which limits resultant stream depending on smaller iterable,
         zip_longest allow stream generator even though smaller iterable has been exhausted.
@@ -468,9 +468,9 @@ class Stream(Generic[X]):
         """
 
         if after:
-            self._pointer = zip_longest(self._pointer, itr, fillvalue=fillvalue)
+            self._pointer = zip_longest(self._pointer, *itr, fillvalue=fillvalue)
         else:
-            self._pointer = zip_longest(itr, self._pointer, fillvalue=fillvalue)
+            self._pointer = zip_longest(*itr, self._pointer, fillvalue=fillvalue)
 
         return self
 
