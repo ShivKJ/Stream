@@ -38,13 +38,3 @@ def close_stream(func, *args, **kwargs):
     out = func(*args, **kwargs)
     args[0].closed = True  # args[0] corresponds to self
     return out
-
-
-# ----------------------Parallel Streams------------------------------
-@decorator
-def cancel_remaining_jobs(func, *args, **kwargs):
-    out = func(*args, **kwargs)
-    for worker in args[0]._registered_jobs:  # args[0] corresponds to self
-        worker.cancel()
-
-    return out
