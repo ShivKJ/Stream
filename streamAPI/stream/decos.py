@@ -44,7 +44,7 @@ def close_stream(func, *args, **kwargs):
 @decorator
 def cancel_remaining_jobs(func, *args, **kwargs):
     out = func(*args, **kwargs)
-    for worker in args[0]._concurrent_worker:  # args[0] corresponds to self
+    for worker in args[0]._registered_jobs:  # args[0] corresponds to self
         worker.cancel()
 
     return out

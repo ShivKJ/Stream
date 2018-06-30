@@ -929,6 +929,19 @@ class Stream(Generic[X]):
 
     @check_stream
     @close_stream
+    def done(self):
+        """
+        This operation is one of the terminal operations.
+        This can be used in case we are only interested in processing
+        of elements.
+
+        # TODO: add example
+        :return:
+        """
+        for _ in self._pointer: pass
+
+    @check_stream
+    @close_stream
     def __iter__(self) -> Iterable[X]:
         """
         This operation is one of the terminal operations
