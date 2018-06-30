@@ -73,6 +73,36 @@ class SetType(set, metaclass=GroupByValueType):
     add = set.add
 
 
+class Supplier(Iterable[X]):
+    """
+    This class provide a wrapper around a callable function.
+
+    Example:
+
+        def get_func(start=0):
+
+            def callable_func():
+                nonlocal start
+                start += 1
+                return start
+
+            return callable_func
+
+        supplier = Supplier(get_func())
+
+        for i in supplier:
+            print(i)
+
+    """
+
+    def __init__(self, func: Callable[[], X]):
+        self.func = func
+
+    def __iter__(self):
+        while True:
+            yield self.func()
+
+
 class Stream(Generic[X]):
     """
     This class can be used to create pipeline operation on given
@@ -154,6 +184,16 @@ class Stream(Generic[X]):
     def __init__(self, data: Iterable[X]):
         self._pointer = data
         self._close = False
+
+    @classmethod
+    def from_supplier(cls, func: Callable[[], X]) -> 'Stream[X]':
+        """
+        Generates a stream from a callable function.
+
+        :param func:
+        :return:
+        """
+        return cls(Supplier(func))
 
     @property
     def closed(self) -> bool:
