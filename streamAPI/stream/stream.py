@@ -78,20 +78,19 @@ class Supplier(Iterable[X]):
     This class provide a wrapper around a callable function.
 
     Example:
+        from random import random
 
-        def get_func(start=0):
+        supplier = Supplier(random)
 
-            def callable_func():
-                nonlocal start
-                start += 1
-                return start
+        print(next(supplier))
+        print(next(supplier))
+        print(next(supplier))
 
-            return callable_func
+        for idx, x in enumerate(supplier):
+            print(x)
 
-        supplier = Supplier(get_func())
-
-        for i in supplier:
-            print(i)
+            if idx == 10:
+                break
 
     """
 
@@ -100,7 +99,10 @@ class Supplier(Iterable[X]):
 
     def __iter__(self):
         while True:
-            yield self.func()
+            yield next(self)
+
+    def __next__(self):
+        return self.func()
 
 
 class Stream(Generic[X]):
