@@ -21,18 +21,26 @@ class Exec(Stream[T]):
         self._exec: Executor = (PPE if multiprocessing else TPE)(max_workers=worker)
         self._worker = worker
 
-    def _func_wrapper(self: 'ParallelStream[T]', func, timeout=None) -> Stream[T]:
+    def _func_wrapper(self: 'ParallelStream[T]', func, timeout=None, batch_size=None) -> Stream[T]:
         """
-        provides a wrapper around given function.
+        processes stream elements using given function "func" concurrently.
+        Elements are processed in batch size of "batch_size". Ordering of stream
+        elements can change.
+
         :param self:
         :param func:
-        :param timeout:
+        :param timeout: time in seconds to wait for the execution of a data point.
+                        If None, then there is no limit on the wait time.
+        :param batch_size: if None then number of worker is used.
         :return:
         """
-        stream = (Stream(self)
+        batch_size = batch_size or self._worker
+        assert batch_size > 0, 'Batch size must be positive'
+
+        stream = (Stream(self._pointer)
                   .map(partial(self._submit_job, func))
                   .peek(self._registered_jobs.append)
-                  .batch(self._worker)
+                  .batch(batch_size or self._worker)
                   .map(as_completed)
                   .flat_map())
 
@@ -44,13 +52,31 @@ class Exec(Stream[T]):
         return stream.map(result_extractor)
 
     def _submit_job(self, func, g) -> Future:
+        """
+        submitting a job to executor.
+
+        :param func: processing function
+        :param g: data point
+        :return:
+        """
+
         return self._exec.submit(func, g)
 
     @staticmethod
-    def _stop_all_jobs(func):
-        @wraps(func)
+    def _stop_all_jobs(terminal_op):
+        """
+        creates a decorator which terminates all waiting or
+        running jobs.
+
+        This function must only be called for each terminal operation.
+
+        :param terminal_op:
+        :return:
+        """
+
+        @wraps(terminal_op)
         def f(self: 'Exec', *args, **kwargs):
-            out = func(self, *args, **kwargs)
+            out = terminal_op(self, *args, **kwargs)
 
             for worker in self._registered_jobs:
                 worker.cancel()
@@ -75,16 +101,39 @@ class ParallelStream(Exec[T]):
         super().__init__(data, worker=worker, multiprocessing=multiprocessing)
 
     @check_stream
-    def map_concurrent(self, func: Function[T, X], timeout=None) -> 'ParallelStream[T]':
-        self._pointer = self._func_wrapper(func, timeout=timeout)
+    def map_concurrent(self, func: Function[T, X], timeout=None, batch_size=None) -> 'ParallelStream[T]':
+        """
+        maps each data point concurrently using function func. Stream is processed in
+        batches and each batch size is of size "batch_size".
+
+        :param func:
+        :param timeout: time in seconds to wait for the execution of a data point.
+                        If None, then there is no limit on the wait time.
+        :param batch_size: if None then number of worker is used.
+        :return:
+        """
+
+        self._pointer = self._func_wrapper(func, timeout=timeout, batch_size=batch_size)
+
         return self
 
     @check_stream
-    def filter_concurrent(self, predicate: Filter[T], timeout=None) -> 'ParallelStream[T]':
+    def filter_concurrent(self, predicate: Filter[T], timeout=None, batch_size=None) -> 'ParallelStream[T]':
+        """
+        Filters data points concurrently depending on predicate. Stream is processed in
+        batches and each batch size is of size "batch_size".
+
+        :param predicate:
+        :param timeout: time in seconds to wait for the execution of a data point.
+                        If None, then there is no limit on the wait time.
+        :param batch_size: if None then number of worker is used.
+        :return:
+        """
+
         def _predicate(g):
             return predicate(g), g
 
-        self._pointer = (self._func_wrapper(_predicate, timeout=timeout)
+        self._pointer = (self._func_wrapper(_predicate, timeout=timeout, batch_size=batch_size)
                          .filter(itemgetter(0))
                          .map(itemgetter(1)))
         return self
