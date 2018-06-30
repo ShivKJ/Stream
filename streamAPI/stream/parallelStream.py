@@ -100,6 +100,41 @@ class ParallelStream(Exec[T]):
 
         super().__init__(data, worker=worker, multiprocessing=multiprocessing)
 
+    @staticmethod
+    def _batch_process(func: Function[T, X], gs: Iterable[T]) -> Iterable[X]:
+        """
+        Applies function "func" on data points "gs" and returns
+        transformed list of data points.
+
+        :param func:
+        :param gs:
+
+        :return:
+        """
+
+        return tuple(func(g) for g in gs)
+
+    @check_stream
+    def batch_processor(self, func: Function[T, X], n: int, timeout=None):
+        """
+        This method is advised to be invoked when using MultiProcessing.
+
+        Usually dispatching single unit of work (that is applying function on
+        a element) is less costly. So it is better to send batch of data to
+        a worker. Here n is dispatch size i.e. this many number of stream
+        elements will be sent to each processor(worker) in one go. Note that
+        number of worker used will be same as "_worker".
+
+        :param func:
+        :param n:
+        :param timeout: time to wait for task to be done, if None then there is no
+                        limit on execution time.
+        :return:
+        """
+        return (self.batch(n)
+                .map_concurrent(partial(ParallelStream._batch_process, func), timeout=timeout)
+                .flat_map())
+
     @check_stream
     def map_concurrent(self, func: Function[T, X], timeout=None, batch_size=None) -> 'ParallelStream[T]':
         """
