@@ -1,44 +1,17 @@
 from collections import deque
 from concurrent.futures import (Executor, Future, ProcessPoolExecutor,
                                 ThreadPoolExecutor, as_completed)
-from functools import partial, wraps
+from functools import partial
 from operator import itemgetter
 from typing import Deque, Iterable
 
 from decorator import decorator
 
-from streamAPI.stream.decos import cancel_remaining_jobs
+from streamAPI.stream.decos import cancel_remaining_jobs, check_stream
 from streamAPI.stream.stream import Stream
 from streamAPI.utility.Types import (Consumer, Filter, Function, T,
                                      X)
 from streamAPI.utility.utils import get_functions_clazz
-
-
-def function_wrapper(self: 'ParallelStream[T]', func, single_chunk=False):
-    """
-    provides a wrapper around given function.
-    :param self:
-    :param func:
-    :param single_chunk: if False, the run jobs in chunks defined as self._worker else all
-            jobs are submitted.
-    :return:
-    """
-
-    @wraps(func)
-    def f(generator: Iterable[T]) -> 'ParallelStream[T]':
-        stream = (Stream(generator)
-                  .map(partial(self._submit_job, func))
-                  .peek(self._concurrent_worker.append))
-
-        if single_chunk is False:  # batch processing
-            stream = (stream
-                      .batch(self._worker)
-                      .map(as_completed)
-                      .flat_map())
-
-        return stream
-
-    return f
 
 
 @decorator
@@ -47,8 +20,7 @@ def _use_exec(func, *args, **kwargs):
     processing_func = args[1]
 
     if kwargs['use_exec'] and self._exec is not None:
-        wrapped_func = function_wrapper(self, processing_func, kwargs.get('single_chunk', False))
-        self._pointer = wrapped_func(self._pointer)
+        self._pointer = self._func_wrapper(processing_func, kwargs.get('single_chunk', False))
         processing_func = Future.result
 
     return getattr(Stream, func.__name__)(self, processing_func)
@@ -71,13 +43,35 @@ class ParallelStream(Stream[T]):
         :return:
         """
         if self._exec is not None:
-            raise AttributeError('Executor was initialized befores.')
+            raise AttributeError('Executor was initialized before.')
 
         self._worker = worker
         self._exec = ProcessPoolExecutor if is_parallel else ThreadPoolExecutor
         self._exec = self._exec(max_workers=worker)
 
         return self
+
+    def _func_wrapper(self: 'ParallelStream[T]', func, single_chunk=False) -> Stream[T]:
+        """
+        provides a wrapper around given function.
+        :param self:
+        :param func:
+        :param single_chunk: if False, the run jobs in chunks defined as self._worker else all
+                jobs are submitted.
+        :return:
+        """
+
+        stream = (Stream(self)
+                  .map(partial(self._submit_job, func))
+                  .peek(self._concurrent_worker.append))
+
+        if single_chunk is False:  # batch processing
+            stream = (stream
+                      .batch(self._worker)
+                      .map(as_completed)
+                      .flat_map())
+
+        return stream
 
     @_use_exec
     def map(self, func: Function[T, X], *, use_exec=True) -> 'ParallelStream[X]':
@@ -86,35 +80,21 @@ class ParallelStream(Stream[T]):
     def _submit_job(self, func, g) -> Future:
         return self._exec.submit(func, g)
 
-    def _predicate_wrapper(self, predicate: Filter[T]):
-        """
-
-        :param predicate:
-        :return:
-        """
-
-        def _predicate(g):
-            return predicate(g), g
-
-        @wraps(predicate)
-        def f(generator: Iterable[T]):
-            return (Stream(generator)
-                    .map(partial(self._submit_job, _predicate))
-                    .peek(self._concurrent_worker.append)
-                    .batch(self._worker)
-                    .map(as_completed)
-                    .flat_map()
-                    .map(Future.result)
-                    .filter(itemgetter(0))
-                    .map(itemgetter(1)))
-
-        return f
-
+    @check_stream
     def filter(self, predicate: Filter[T], *, use_exec=True) -> 'ParallelStream[T]':
-        if use_exec and self._exec is not None:
-            predicate = self._predicate_wrapper(predicate)
 
-        return super().filter(predicate)
+        if use_exec and self._exec is not None:
+            def _predicate(g):
+                return predicate(g), g
+
+            self._pointer = (self._func_wrapper(_predicate, single_chunk=False)
+                             .map(Future.result)
+                             .filter(itemgetter(0))
+                             .map(itemgetter(1)))
+        else:
+            self._pointer = filter(predicate, self._pointer)
+
+        return self
 
     # terminal operation will trigger cancelling of submitted unnecessary jobs.
     partition = cancel_remaining_jobs(Stream.partition)
