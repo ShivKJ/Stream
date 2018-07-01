@@ -151,7 +151,7 @@ class ChainedCondition(AbstractCondition):
     can be closed by invoking "otherwise" or "done" method.
 
     If "done" method has been chosen to close the Pipeline and if no condition
-    defined by ChainedCondition object returns True then element is returned.
+    defined by ChainedCondition object returns True then element itself is returned.
 
     """
 
