@@ -188,14 +188,17 @@ class Stream(Generic[X]):
         self._close = False
 
     @classmethod
-    def from_supplier(cls, func: Callable[[], X]) -> 'Stream[X]':
+    def from_supplier(cls, func: Callable[[], X], *args, **kwargs) -> 'Stream[X]':
         """
         Generates a stream from a callable function.
 
         :param func:
+        :param args: positional arguments required instantiate cls
+        :param kwargs: kwargs required for cls.
         :return:
         """
-        return cls(Supplier(func))
+        
+        return cls(Supplier(func), *args, **kwargs)
 
     @property
     def closed(self) -> bool:
