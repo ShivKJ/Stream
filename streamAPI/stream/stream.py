@@ -184,7 +184,7 @@ class Stream(Generic[X]):
     """
 
     def __init__(self, data: Iterable[X]):
-        self._pointer = data
+        self._pointer = iter(data)
         self._close = False
 
     @classmethod
@@ -570,6 +570,9 @@ class Stream(Generic[X]):
         """
 
         return self.zip(cycle(itr), after=after)
+
+    def __next__(self) -> X:
+        return next(self._pointer)
 
     @check_stream
     @close_stream
