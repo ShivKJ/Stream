@@ -1,6 +1,6 @@
 from abc import abstractmethod
-from functools import wraps
-from itertools import (accumulate, chain, cycle, dropwhile, islice,
+from functools import reduce, wraps
+from itertools import (chain, cycle, dropwhile, islice,
                        takewhile, zip_longest)
 from typing import (Any, Dict, Generic, Iterable, Sequence, Tuple,
                     Union)
@@ -964,13 +964,12 @@ class Stream(Generic[X]):
         """
 
         if initial_point is not NIL:
-            self._pointer = chain((initial_point,), self._pointer)
-
-        self._pointer = accumulate(self._pointer, bi_func)
-
-        for initial_point in self._pointer: pass
-
-        return EMPTY if initial_point is NIL else Optional(initial_point)
+            return Optional(reduce(bi_func, self._pointer, initial_point))
+        else:
+            try:
+                return Optional(reduce(bi_func, self._pointer))
+            except TypeError:
+                return EMPTY
 
     @check_stream
     @close_stream
