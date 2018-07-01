@@ -1,13 +1,12 @@
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from collections import deque
-from typing import Callable, Deque, Generic, Iterable
+from typing import Callable, Deque, Iterable
 
 from streamAPI.stream.decos import check_pipeline, close_pipeline
 from streamAPI.stream.exception import PipelineNOTClosed
 from streamAPI.stream.optional import EMPTY, Optional
 from streamAPI.utility.Types import Filter, Function, X
-from streamAPI.utility.Types import Y
-from streamAPI.utility.utils import get_functions_clazz, always_true
+from streamAPI.utility.utils import always_true, get_functions_clazz
 
 
 class GroupByValueType(type):
@@ -100,49 +99,131 @@ class Supplier(Iterable[X]):
         return self.func()
 
 
-class IfThen(Generic[X, Y]):
+class AbstractCondition(ABC):
+    @abstractmethod
+    def apply(self, e): pass
+
+
+class _IfThen(AbstractCondition):
+    """
+    Objects of this class will be chained together in ChainedCondition
+    class object.
+
+    def transform(x):
+        if predicate(x):
+            return Optional(func(x))
+        else:
+            return EMPTY
+
+
+    That is equivalent to: IfThen(predicate, func)
     """
 
-    """
-
-    def __init__(self, predicate: Filter[X], func: Function[X, Y]):
+    def __init__(self, predicate: Filter, func: Function):
         self._if = predicate
         self._func = func
 
-    def apply(self, e: X) -> Optional[Y]:
+    def apply(self, e) -> Optional:
         return Optional(self._func(e)) if self._if(e) else EMPTY
 
 
-class ChainedCondition:
+class ChainedCondition(AbstractCondition):
     """
+    This class will help Stream in transforming elements on the basis
+    of conditions.
+
+    def transform(x):
+        if predicate1(x):
+            return f1(x)
+        elif predicate2(x):
+            return f2(x)
+        .
+        .
+        .
+        else:
+            return fn(x)
+
+    That is equivalent to:
+
+    ChainedCondition().if_then(predicate1,f1).if_then(predicate2,f2). ... .otherwise(fn)
+
+    Note that before applying element, chainedCondition must be closed; ChainedCondition
+    can be closed by invoking "otherwise" or "done" method.
+
+    If "done" method has been chosen to close the Pipeline and if no condition
+    defined by ChainedCondition object returns True then element is returned.
 
     """
 
     def __init__(self, name=None):
-        self._conditions: Deque[IfThen] = deque()
+        self._conditions: Deque[_IfThen] = deque()
         self._closed = False
         self._name = name
         self._else_called = False
 
     @classmethod
     def if_else(cls, predicate, if_, else_) -> 'ChainedCondition':
+        """
+        Creates a ChainedCondition with given "if" and "else" condition.
+
+        If predicate returns True on an element then ChainedCondition
+        will return if_(element) otherwise else_(element) will be returned
+        on invoking "apply" method.
+
+        :param predicate:
+        :param if_:
+        :param else_:
+        :return:
+        """
+
         return cls().if_then(predicate, if_).otherwise(else_)
 
     @property
     def closed(self):
+        """
+        Gets current state of ChainedCondition pipeline.
+        :return:
+        """
+
         return self._closed
 
     @closed.setter
     def closed(self, closed):
+        """
+        Updates state of ChainedCondition pipeline.
+
+        :param closed:
+        :return:
+        """
+
         self._closed = closed
 
     @check_pipeline
     def if_then(self, predicate: Filter, func: Function):
-        self._conditions.append(IfThen(predicate, func))
+        """
+        Creates _IfThen object from given predicate and func.
+
+        :param predicate:
+        :param func:
+        :return:
+        """
+
+        self._conditions.append(_IfThen(predicate, func))
         return self
 
     @close_pipeline
     def otherwise(self, func: Function):
+        """
+        Adds "else" condition to ChainedCondition object.
+        After this method, pipeline will be closed.
+
+        It is required that "if" condition must be specified
+        before invoking this method.
+
+        :param func:
+        :return:
+        """
+
         if not self._conditions:
             raise AttributeError("No 'if' condition added.")
 
@@ -150,20 +231,37 @@ class ChainedCondition:
 
     @close_pipeline
     def done(self):
+        """
+        closes the ChainedCondition pipeline.
+        :return:
+        """
+
         return self
 
-    def apply(self, x):
+    def apply(self, e):
+        """
+        Transforms given element using added conditions.
+
+        If no condition returns True on element e then returns e.
+
+        Note that ChainedCondition pipeline must be closed
+        before invoking this method.
+
+        :param e:
+        :return:
+        """
+
         if self._closed is False:
             raise PipelineNOTClosed('close operation such as else_ '
                                     'or done has not been invoked.')
 
         for condition in self._conditions:
-            y = condition.apply(x)
+            y = condition.apply(e)
 
             if y is not EMPTY:
                 return y.get()
-
-        return x
+        else:
+            return e
 
     def default_name(self) -> str:
         size = len(self._conditions)

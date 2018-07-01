@@ -21,7 +21,7 @@ class Optional(Generic[T]):
         :return:
         """
 
-        return self.data is not EMPTY
+        return self is not EMPTY
 
     def get(self) -> T:
         """

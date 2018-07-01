@@ -1,8 +1,11 @@
 import unittest
+from collections import defaultdict
 
 from streamAPI.stream.optional import EMPTY, Optional
 from streamAPI.stream.stream import Stream
-from streamAPI.stream.streamHelper import ListType, SetType
+from streamAPI.stream.streamHelper import ChainedCondition, ListType, SetType
+from streamAPI.test.testHelper import random
+from streamAPI.utility.utils import identity
 
 
 class StreamTest(unittest.TestCase):
@@ -100,6 +103,105 @@ class StreamTest(unittest.TestCase):
 
         out = Stream([4, 1, 2, 3, 9, 0, 5]).cycle(range(3), after=False).as_seq()
         self.assertListEqual(out, [(0, 4), (1, 1), (2, 2), (0, 3), (1, 9), (2, 0), (0, 5)])
+
+    def test_if_else(self):
+        rnd = random()
+
+        def get(): return rnd.randint(1, 100)
+
+        size = 1000
+
+        out = (Stream.from_supplier(get)
+               .limit(size)
+               .if_else(lambda x: x < 50, lambda x: 0, lambda x: 1)
+               .mapping(identity, lambda x: 1,
+                        resolve=lambda x, y: x + y))
+
+        out_target = defaultdict(int)
+        rnd = random()
+
+        for _ in range(size):
+            out_target[0 if get() < 50 else 1] += 1
+
+        self.assertDictEqual(out, out_target)
+
+    def test_conditional1(self):
+        rnd = random()
+
+        def get():
+            return rnd.randint(1, 100)
+
+        size = 1000
+
+        conditions = (ChainedCondition()
+                      .if_then(lambda x: x <= 10, lambda x: 10)
+                      .if_then(lambda x: x <= 20, lambda x: 20)
+                      .if_then(lambda x: x <= 30, lambda x: 30)
+                      .done())
+
+        out = (Stream.from_supplier(get)
+               .limit(size)
+               .conditional(conditions)
+               .mapping(identity, lambda x: 1, resolve=lambda x, y: x + y))
+
+        out_target = defaultdict(int)
+        rnd = random()
+
+        for _ in range(size):
+            e = get()
+            k = None
+
+            if e <= 10:
+                k = 10
+            elif e <= 20:
+                k = 20
+            elif e <= 30:
+                k = 30
+            else:
+                k = e
+
+            out_target[k] += 1
+
+        self.assertDictEqual(out, out_target)
+
+    def test_conditional2(self):
+        rnd = random()
+
+        def get():
+            return rnd.randint(1, 100)
+
+        size = 1000
+
+        conditions = (ChainedCondition()
+                      .if_then(lambda x: x <= 10, lambda x: 10)
+                      .if_then(lambda x: x <= 20, lambda x: 20)
+                      .if_then(lambda x: x <= 30, lambda x: 30)
+                      .otherwise(lambda x: -1))
+
+        out = (Stream.from_supplier(get)
+               .limit(size)
+               .conditional(conditions)
+               .mapping(identity, lambda x: 1, resolve=lambda x, y: x + y))
+
+        out_target = defaultdict(int)
+        rnd = random()
+
+        for _ in range(size):
+            e = get()
+            k = None
+
+            if e <= 10:
+                k = 10
+            elif e <= 20:
+                k = 20
+            elif e <= 30:
+                k = 30
+            else:
+                k = -1
+
+            out_target[k] += 1
+
+        self.assertDictEqual(out, out_target)
 
 
 if __name__ == '__main__':
