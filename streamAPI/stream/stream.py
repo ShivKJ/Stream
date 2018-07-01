@@ -197,7 +197,7 @@ class Stream(Generic[X]):
         :param kwargs: kwargs required for cls.
         :return:
         """
-        
+
         return cls(Supplier(func), *args, **kwargs)
 
     @property
@@ -373,6 +373,7 @@ class Stream(Generic[X]):
         """
 
         assert n > 0, 'n should be positive'
+
         self._pointer = Stream._consumer_wrapper(consumer, n=n)(self._pointer)
         return self
 
@@ -443,7 +444,6 @@ class Stream(Generic[X]):
         """
 
         self._pointer = divide_in_chunk(self._pointer, n)
-
         return self
 
     @check_stream
@@ -464,7 +464,6 @@ class Stream(Generic[X]):
         """
 
         self._pointer = enumerate(self._pointer, start=start)
-
         return self
 
     @check_stream
@@ -889,6 +888,7 @@ class Stream(Generic[X]):
         :param predicate:
         :return:
         """
+
         return not self.any(predicate)
 
     @check_stream
@@ -985,6 +985,7 @@ class Stream(Generic[X]):
         # TODO: add example
         :return:
         """
+
         for _ in self._pointer: pass
 
     @check_stream

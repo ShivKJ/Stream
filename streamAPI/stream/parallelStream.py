@@ -20,6 +20,7 @@ class Exec(Stream[T]):
         :param worker: number of worker
         :param multiprocessing: it True then multiprocessing is used else multiThreading.
         """
+
         super().__init__(data)
 
         self._registered_jobs: Deque[Future] = deque()
@@ -63,6 +64,7 @@ class Exec(Stream[T]):
         :param g:
         :return:
         """
+
         return self._exec.submit(func, g)
 
     @staticmethod
@@ -148,6 +150,7 @@ class ParallelStream(Exec[T]):
         :param batch_size: If it is None then number of worker is used.
         :return:
         """
+
         self._pointer = self._parallel_processor(func, timeout=timeout, batch_size=batch_size)
         return self
 
