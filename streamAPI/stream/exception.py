@@ -1,6 +1,12 @@
-class StreamClosedException(Exception):
+class PipelineClosed(Exception):
     """
-    Exception thrown in case Stream is closed and stream functions
-    are invoked.
+    Exception thrown in case PipeLine(for example Stream) is closed.
+    """
+    pass
+
+
+class PipelineNOTClosed(Exception):
+    """
+    Exception thrown in case PipeLine is not closed.
     """
     pass

@@ -1,108 +1,17 @@
-from abc import abstractmethod
 from functools import reduce, wraps
-from itertools import (chain, cycle, dropwhile, islice,
-                       takewhile, zip_longest)
-from typing import (Any, Dict, Generic, Iterable, Sequence, Tuple,
-                    Union)
+from itertools import chain, cycle, dropwhile, islice, takewhile, zip_longest
+from typing import Any, Dict, Generic, Iterable, Sequence, Tuple, Union
 
-from streamAPI.stream.decos import check_stream, close_stream
+from streamAPI.stream.decos import check_pipeline, close_pipeline
 from streamAPI.stream.optional import EMPTY, Optional
+from streamAPI.stream.streamHelper import (ChainedCondition, GroupByValueType,
+                                           ListType, Supplier)
 from streamAPI.utility.Types import (BiFunction, Callable, Consumer,
                                      Function, T, X, Y, Z)
 from streamAPI.utility.utils import (Filter, divide_in_chunk,
                                      get_functions_clazz, identity)
 
 NIL = object()
-
-
-class GroupByValueType(type):
-    """
-    In group_by method of Stream class, we may want to
-    used customised container type for value holding.
-
-    For example:
-        Stream([1,2,5,1,3,4,2]).group_by(lambda x:x%2)
-        -> {1: [1, 5, 1, 3], 0: [2, 4, 2]}
-
-        Here value container class is List.
-
-        If we want value container class to be Set
-        Stream([1, 2, 5, 1, 3, 4, 2]).group_by(lambda x: x % 2, value_container_clazz=SetType)
-        -> {1: {1, 3, 5}, 0: {2, 4}}
-
-    By default, value container class will be of Type List. In case we want it be of
-    specific type, then the class has to implement "add" method. This can be fulfilled by
-    making GroupByValueType class as a meta class.
-
-    Here we implement two Class ListType and SetType.
-    """
-
-    def __init__(cls, *args, **kwargs):
-        type.__init__(cls, *args, **kwargs)
-
-    @abstractmethod
-    def add(self, o):
-        pass
-
-
-class ListType(list, metaclass=GroupByValueType):
-    """
-    This is the default choice of class for holding value after "group_by"
-    operation on Stream class object.
-
-    Stream([1,2,5,1,3,4,2]).group_by(lambda x:x%2,value_container_clazz=ListType)
-    -> {1: [1, 5, 1, 3], 0: [2, 4, 2]}
-    """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    def add(self, o):
-        return self.append(o)
-
-
-class SetType(set, metaclass=GroupByValueType):
-    """
-    Stream([1,2,5,1,3,4,2]).group_by(lambda x:x%2,value_container_clazz=SetType)
-    -> {1: {1, 3, 5}, 0: {2, 4}}
-    """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    add = set.add
-
-
-class Supplier(Iterable[X]):
-    """
-    This class provide a wrapper around a callable function.
-
-    Example:
-        from random import random
-
-        supplier = Supplier(random)
-
-        print(next(supplier))
-        print(next(supplier))
-        print(next(supplier))
-
-        for idx, x in enumerate(supplier):
-            print(x)
-
-            if idx == 10:
-                break
-
-    """
-
-    def __init__(self, func: Callable[[], X]):
-        self.func = func
-
-    def __iter__(self):
-        while True:
-            yield next(self)
-
-    def __next__(self):
-        return self.func()
 
 
 class Stream(Generic[X]):
@@ -185,7 +94,7 @@ class Stream(Generic[X]):
 
     def __init__(self, data: Iterable[X]):
         self._pointer = iter(data)
-        self._close = False
+        self._closed = False
 
     @classmethod
     def from_supplier(cls, func: Callable[[], X], *args, **kwargs) -> 'Stream[X]':
@@ -208,7 +117,7 @@ class Stream(Generic[X]):
         :return:
         """
 
-        return self._close
+        return self._closed
 
     @closed.setter
     def closed(self, is_close: bool):
@@ -217,9 +126,9 @@ class Stream(Generic[X]):
         :param is_close:
         """
 
-        self._close = is_close
+        self._closed = is_close
 
-    @check_stream
+    @check_pipeline
     def map(self, func: Function[X, Y]) -> 'Stream[Y]':
         """
         maps elements of stream and produces stream of mapped element.
@@ -235,7 +144,7 @@ class Stream(Generic[X]):
         self._pointer = map(func, self._pointer)
         return self
 
-    @check_stream
+    @check_pipeline
     def filter(self, predicate: Filter[X]) -> 'Stream[X]':
         """
         Filters elements from Stream.
@@ -251,7 +160,7 @@ class Stream(Generic[X]):
         self._pointer = filter(predicate, self._pointer)
         return self
 
-    @check_stream
+    @check_pipeline
     def sort(self, comp=None, reverse: bool = False) -> 'Stream[X]':
         """
         Sorts element of Stream.
@@ -290,7 +199,7 @@ class Stream(Generic[X]):
         self._pointer = sorted(self._pointer, key=comp, reverse=reverse)
         return self
 
-    @check_stream
+    @check_pipeline
     def distinct(self) -> 'Stream[X]':
         """
         uses distinct element of for further processing.
@@ -322,7 +231,7 @@ class Stream(Generic[X]):
                 yield item
                 consumer_items.add(item)
 
-    @check_stream
+    @check_pipeline
     def limit(self, n: int) -> 'Stream[X]':
         """
         limits number of element in stream.
@@ -338,7 +247,7 @@ class Stream(Generic[X]):
         self._pointer = islice(self._pointer, n)
         return self
 
-    @check_stream
+    @check_pipeline
     def peek(self, consumer: Consumer[X]) -> 'Stream[X]':
         """
         processes element while streaming.
@@ -356,7 +265,7 @@ class Stream(Generic[X]):
         self._pointer = Stream._consumer_wrapper(consumer)(self._pointer)
         return self
 
-    @check_stream
+    @check_pipeline
     def peek_after_each(self, consumer: Consumer[X], n: int) -> 'Stream[X]':
         """
         processes element while streaming. Consumer is called after each nth item.
@@ -399,7 +308,7 @@ class Stream(Generic[X]):
 
         return func
 
-    @check_stream
+    @check_pipeline
     def skip(self, n: int) -> 'Stream[X]':
         """
         Skips n number of element from Stream
@@ -415,7 +324,7 @@ class Stream(Generic[X]):
         self._pointer = islice(self._pointer, n, None)
         return self
 
-    @check_stream
+    @check_pipeline
     def flat_map(self) -> 'Stream[X]':
         """
         flats the stream if each element is iterable.
@@ -430,7 +339,7 @@ class Stream(Generic[X]):
         self._pointer = chain.from_iterable(self._pointer)
         return self
 
-    @check_stream
+    @check_pipeline
     def batch(self, n: int):
         """
         creates batches of size n from stream.
@@ -446,7 +355,7 @@ class Stream(Generic[X]):
         self._pointer = divide_in_chunk(self._pointer, n)
         return self
 
-    @check_stream
+    @check_pipeline
     def enumerate(self, start=0):
         """
         create stream of tuples where first entry is index and
@@ -466,7 +375,7 @@ class Stream(Generic[X]):
         self._pointer = enumerate(self._pointer, start=start)
         return self
 
-    @check_stream
+    @check_pipeline
     def take_while(self, predicate: Filter[X]) -> 'Stream[X]':
         """
         processes the element of stream till the predicate returns True.
@@ -481,7 +390,7 @@ class Stream(Generic[X]):
         self._pointer = takewhile(predicate, self._pointer)
         return self
 
-    @check_stream
+    @check_pipeline
     def drop_while(self, predicate: Filter[X]) -> 'Stream[X]':
         """
         drops elements until predicate returns False
@@ -495,7 +404,7 @@ class Stream(Generic[X]):
         self._pointer = dropwhile(predicate, self._pointer)
         return self
 
-    @check_stream
+    @check_pipeline
     def zip(self, *itr: Iterable[Y], after=True) -> 'Stream[Tuple]':
         """
         zips stream with another Iterable object.
@@ -530,7 +439,7 @@ class Stream(Generic[X]):
 
         return self
 
-    @check_stream
+    @check_pipeline
     def zip_longest(self, *itr: Iterable[Y], after=True, fillvalue=None) -> 'Stream[Tuple]':
         """
         Unlike zip method which limits resultant stream depending on smaller iterable,
@@ -557,7 +466,7 @@ class Stream(Generic[X]):
 
         return self
 
-    @check_stream
+    @check_pipeline
     def cycle(self, itr: Iterable[Y], after=True) -> 'Stream[Tuple]':
         """
         Repeats iterable "itr" with stream until stream is exhausted.
@@ -573,11 +482,55 @@ class Stream(Generic[X]):
 
         return self.zip(cycle(itr), after=after)
 
+    @check_pipeline
+    def if_else(self, predicate: Filter[X], if_: Function[X, Y], else_: Function[X, Y]) -> 'Stream[Y]':
+        """
+        if predicate returns True then elements are transformed according to if_ otherwise else_
+        function is used. This method is the special case of "conditional" method.
+
+        Example:
+            Stream(range(10)).condition(lambda x: 3 <= x <= 7, lambda x: 1 , lambda x: 0).as_seq()
+            -> [0, 0, 0, 1, 1, 1, 1, 1, 0, 0]
+
+        :param predicate:
+        :param if_:
+        :param else_:
+        :return:
+        """
+
+        return self.map(ChainedCondition.if_else(predicate, if_, else_).apply)
+
+    @check_pipeline
+    def conditional(self, chained_condition: ChainedCondition):
+        """
+        Transforming stream elements on the basis of given condition.
+
+        Example:
+            conditions = (ChainedCondition().if_then(lambda x : x < 3, lambda x : 0)
+                          .if_then(lambda x: x < 7,lambda x: 1)
+                          .otherwise(lambda x : 2))
+
+            Stream(range(10)).conditional(condition).as_seq()
+            ->  [0, 0, 0, 1, 1, 1, 1, 2, 2, 2]
+
+            conditions = (ChainedCondition().if_then(lambda x : x < 3, lambda x : 0)
+              .if_then(lambda x: x < 7,lambda x: 1).done())
+
+            Stream(range(10)).conditional(condition).as_seq()
+            -> [0, 0, 0, 1, 1, 1, 1, 7, 8, 9]
+
+
+        :param chained_condition:
+        :return:
+        """
+
+        return self.map(chained_condition.apply)
+
     def __next__(self) -> X:
         return next(self._pointer)
 
-    @check_stream
-    @close_stream
+    @check_pipeline
+    @close_pipeline
     def partition(self, mapper: Filter[X] = bool) -> Dict[bool, Sequence[X]]:
         """
         This operation is one of the terminal operations
@@ -593,8 +546,8 @@ class Stream(Generic[X]):
 
         return self.group_by(mapper)
 
-    @check_stream
-    @close_stream
+    @check_pipeline
+    @close_pipeline
     def count(self) -> int:
         """
         This operation is one of the terminal operations
@@ -607,8 +560,8 @@ class Stream(Generic[X]):
 
         return sum(1 for _ in self._pointer)
 
-    @check_stream
-    @close_stream
+    @check_pipeline
+    @close_pipeline
     def min(self, comp=None) -> Optional[Any]:
         """
         This operation is one of the terminal operations
@@ -646,8 +599,8 @@ class Stream(Generic[X]):
         except ValueError:
             return EMPTY
 
-    @check_stream
-    @close_stream
+    @check_pipeline
+    @close_pipeline
     def max(self, comp=None) -> Optional[Any]:
         """
         This operation is one of the terminal operations.
@@ -685,8 +638,8 @@ class Stream(Generic[X]):
         except ValueError:
             return EMPTY
 
-    @check_stream
-    @close_stream
+    @check_pipeline
+    @close_pipeline
     def group_by(self, key_hasher, value_mapper: Function[X, Y] = identity,
                  value_container_clazz: GroupByValueType = ListType) -> Dict[Any, Sequence[Y]]:
         """
@@ -732,8 +685,8 @@ class Stream(Generic[X]):
 
         pt.add(v)
 
-    @check_stream
-    @close_stream
+    @check_pipeline
+    @close_pipeline
     def mapping(self, key_mapper: Function[X, T],
                 value_mapper: Function[X, Y] = identity,
                 resolve: BiFunction[Y, Y, Z] = None) -> Dict[T, Union[Y, Z]]:
@@ -786,8 +739,8 @@ class Stream(Generic[X]):
 
         return out
 
-    @check_stream
-    @close_stream
+    @check_pipeline
+    @close_pipeline
     def as_seq(self, seq_clazz: Callable[[Iterable[X], None], Y] = list, **kwargs) -> Y:
         """
         This operation is one of the terminal operations
@@ -806,8 +759,8 @@ class Stream(Generic[X]):
 
         return seq_clazz(self._pointer, **kwargs)
 
-    @check_stream
-    @close_stream
+    @check_pipeline
+    @close_pipeline
     def all(self, predicate: Filter[X] = identity) -> bool:
         """
         This operation is one of the terminal operations
@@ -833,8 +786,8 @@ class Stream(Generic[X]):
 
         return all(map(predicate, self._pointer))
 
-    @check_stream
-    @close_stream
+    @check_pipeline
+    @close_pipeline
     def any(self, predicate: Filter[X] = identity) -> bool:
         """
         This operation is one of the terminal operations
@@ -860,8 +813,8 @@ class Stream(Generic[X]):
 
         return any(map(predicate, self._pointer))
 
-    @check_stream
-    @close_stream
+    @check_pipeline
+    @close_pipeline
     def none_match(self, predicate: Filter[X] = identity) -> bool:
         """
         This operation is one of the terminal operations
@@ -891,8 +844,8 @@ class Stream(Generic[X]):
 
         return not self.any(predicate)
 
-    @check_stream
-    @close_stream
+    @check_pipeline
+    @close_pipeline
     def find_first(self) -> Optional[Any]:
         """
         This operation is one of the terminal operations
@@ -909,8 +862,8 @@ class Stream(Generic[X]):
 
         return EMPTY
 
-    @check_stream
-    @close_stream
+    @check_pipeline
+    @close_pipeline
     def for_each(self, consumer: Consumer[X]):
         """
         This operation is one of the terminal operations
@@ -931,8 +884,8 @@ class Stream(Generic[X]):
         for g in self._pointer:
             consumer(g)
 
-    @check_stream
-    @close_stream
+    @check_pipeline
+    @close_pipeline
     def reduce(self, bi_func: BiFunction[X, X, Y], initial_point: X = NIL) -> Optional[Y]:
         """
         This operation is one of the terminal operations
@@ -974,8 +927,8 @@ class Stream(Generic[X]):
             except TypeError:
                 return EMPTY
 
-    @check_stream
-    @close_stream
+    @check_pipeline
+    @close_pipeline
     def done(self):
         """
         This operation is one of the terminal operations.
@@ -988,8 +941,8 @@ class Stream(Generic[X]):
 
         for _ in self._pointer: pass
 
-    @check_stream
-    @close_stream
+    @check_pipeline
+    @close_pipeline
     def __iter__(self) -> Iterable[X]:
         """
         This operation is one of the terminal operations

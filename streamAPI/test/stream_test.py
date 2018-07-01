@@ -1,6 +1,8 @@
 import unittest
 
-from streamAPI.stream import EMPTY, ListType, Optional, SetType, Stream
+from streamAPI.stream.optional import EMPTY, Optional
+from streamAPI.stream.stream import Stream
+from streamAPI.stream.streamHelper import ListType, SetType
 
 
 class StreamTest(unittest.TestCase):

@@ -5,7 +5,7 @@ from functools import partial, wraps
 from operator import itemgetter
 from typing import Deque, Iterable
 
-from streamAPI.stream.decos import check_stream
+from streamAPI.stream.decos import check_pipeline
 from streamAPI.stream.stream import Stream
 from streamAPI.utility.Types import (Filter, Function, T, X)
 from streamAPI.utility.utils import get_functions_clazz
@@ -116,7 +116,7 @@ class ParallelStream(Exec[T]):
 
         return tuple(func(g) for g in gs)
 
-    @check_stream
+    @check_pipeline
     def batch_processor(self, func: Function[T, X], dispatch_size: int, timeout=None):
         """
         This method is advised to be invoked when using MultiProcessing.
@@ -139,7 +139,7 @@ class ParallelStream(Exec[T]):
                 .map_concurrent(partial(ParallelStream._batch_process, func), timeout=timeout)
                 .flat_map())
 
-    @check_stream
+    @check_pipeline
     def map_concurrent(self, func: Function[T, X], timeout=None, batch_size=None) -> 'ParallelStream[T]':
         """
         maps elements concurrently. Elements are processed in batches of size "batch_size".
@@ -154,7 +154,7 @@ class ParallelStream(Exec[T]):
         self._pointer = self._parallel_processor(func, timeout=timeout, batch_size=batch_size)
         return self
 
-    @check_stream
+    @check_pipeline
     def filter_concurrent(self, predicate: Filter[T], timeout=None, batch_size=None) -> 'ParallelStream[T]':
         """
         filters elements concurrently. Elements are processed in batches of size "batch_size".

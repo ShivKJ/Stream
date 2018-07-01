@@ -234,7 +234,7 @@ def filter_transform(data_stream: Iterable[T],
     return map(transform, filter(condition, data_stream))
 
 
-def _always_true(f) -> bool:
+def always_true(f) -> bool:
     return True
 
 
@@ -243,7 +243,7 @@ def identity(f: T) -> T:
 
 
 def _files_inside_dir(dir_name: str,
-                      match: Filter[str] = _always_true,
+                      match: Filter[str] = always_true,
                       append_full_path=True) -> PathGenerator:
     """
     recursively finds all files inside dir and in its subdir recursively.
@@ -263,7 +263,7 @@ def _files_inside_dir(dir_name: str,
 
 
 def files_inside_dir(dir_name: str,
-                     match: Filter[str] = _always_true,
+                     match: Filter[str] = always_true,
                      as_type: Callable[[PathGenerator], T] = list,
                      append_full_path=True) -> T:
     """
