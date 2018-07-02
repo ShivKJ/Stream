@@ -131,7 +131,7 @@ class _IfThen(AbstractCondition):
         super().__init__()
 
         self._if = if_
-        self._func = then
+        self._then = then
 
     def apply(self, e) -> Optional:
         """
@@ -142,7 +142,7 @@ class _IfThen(AbstractCondition):
         :return:
         """
 
-        return Optional(self._func(e)) if self._if(e) else EMPTY
+        return Optional(self._then(e)) if self._if(e) else EMPTY
 
 
 class Closable:
@@ -210,11 +210,11 @@ class ChainedCondition(Closable, AbstractCondition):
     @classmethod
     def if_else(cls, if_: Filter, then: Function, else_: Function) -> 'ChainedCondition':
         """
-        Creates a ChainedCondition with given "if" and "else" condition.
+        Creates a ChainedCondition.
 
-        If predicate returns True on an element then ChainedCondition
-        will return if_(element) otherwise else_(element) will be returned
-        on invoking "apply" method.
+        If "if_" returns True on an element then ChainedCondition
+        will return "then(element)" otherwise else_(element) will be returned
+        on invoking "apply" method on this class object.
 
         :param if_:
         :param then:
@@ -227,7 +227,7 @@ class ChainedCondition(Closable, AbstractCondition):
     @check_pipeline
     def if_then(self, if_: Filter, then: Function):
         """
-        Creates _IfThen object from given predicate and func.
+        Creates _IfThen object from given "if_" and "then".
 
         :param if_:
         :param then:

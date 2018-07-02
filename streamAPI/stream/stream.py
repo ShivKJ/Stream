@@ -471,10 +471,9 @@ class Stream(Closable, Generic[X]):
                 then: Function[X, Y],
                 else_: Function[X, Y] = identity) -> 'Stream[Y]':
         """
-        if predicate returns True then elements are transformed according to if_ otherwise else_
-        function is used. This method is the special case of "conditional" method. "else_" has
-        default value "identity" which return element as it is; that is if "if" condition (predicate)
-        does not return True then element is not modified.
+        if "if_" returns True then elements are transformed according to "then" otherwise else_
+        function is used. This method is the special case of "conditional" method.
+        "else_" has default value "identity" which return element as it is in case "if_" fails;
 
         Example:
             Stream(range(10)).condition(lambda x: 3 <= x <= 7, lambda x: 1 , lambda x: 0).as_seq()
