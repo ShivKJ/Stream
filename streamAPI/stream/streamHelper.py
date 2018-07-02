@@ -103,7 +103,13 @@ class Supplier(Iterable[X]):
 
 class AbstractCondition(ABC):
     @abstractmethod
-    def apply(self, e): pass
+    def apply(self, e):
+        """
+        Transforming the element depending on condition specified.
+
+        :param e:
+        :return:
+        """
 
 
 class _IfThen(AbstractCondition):
