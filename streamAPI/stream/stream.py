@@ -483,7 +483,9 @@ class Stream(Generic[X]):
         return self.zip(cycle(itr), after=after)
 
     @check_pipeline
-    def if_else(self, predicate: Filter[X], if_: Function[X, Y], else_: Function[X, Y]) -> 'Stream[Y]':
+    def if_else(self, predicate: Filter[X],
+                if_: Function[X, Y],
+                else_: Function[X, Y] = identity) -> 'Stream[Y]':
         """
         if predicate returns True then elements are transformed according to if_ otherwise else_
         function is used. This method is the special case of "conditional" method.
@@ -494,7 +496,8 @@ class Stream(Generic[X]):
 
         :param predicate:
         :param if_:
-        :param else_:
+        :param else_: if "else_" is not specified then on failing condition on "predicate"
+                      elements are not transformed.
         :return:
         """
 
