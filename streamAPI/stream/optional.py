@@ -9,7 +9,7 @@ class Optional(Generic[T]):
     """
 
     def __init__(self, data: T):
-        self.data = data
+        self._data = data
 
     def present(self) -> bool:
         """
@@ -34,7 +34,7 @@ class Optional(Generic[T]):
         if not self.present():
             raise ValueError('data is not present')
 
-        return self.data
+        return self._data
 
     def if_present(self, consumer: Consumer[T]):
         """
@@ -45,7 +45,7 @@ class Optional(Generic[T]):
         """
 
         if self.present():
-            consumer(self.data)
+            consumer(self._data)
 
     def or_else(self, other: X) -> Union[T, X]:
         """
@@ -55,7 +55,7 @@ class Optional(Generic[T]):
         :return:
         """
 
-        return self.data if self.present() else other
+        return self._data if self.present() else other
 
     def or_raise(self, exception: Exception) -> T:
         """
@@ -69,19 +69,28 @@ class Optional(Generic[T]):
         if not self.present():
             raise exception
 
-        return self.data
+        return self._data
 
     def __str__(self):
-        return 'Optional[' + str(self.data) + ']' if self is not EMPTY else 'EMPTY'
+        return 'Optional[' + str(self._data) + ']' if self is not EMPTY else 'EMPTY'
 
     def __repr__(self):
         return str(self)
 
     def __eq__(self, other: 'Optional[T]') -> bool:
-        return self is other or (other is not EMPTY and self.data == other.data)
+        if self is EMPTY:
+            return other is EMPTY
+
+        if other is EMPTY:
+            return False
+
+        if not isinstance(other, Optional):
+            return False
+
+        return self._data == other._data
 
     def __hash__(self):
-        return hash(self.data) if self is not EMPTY else 0
+        return hash(self._data) if self is not EMPTY else 0
 
 
 EMPTY = Optional(None)

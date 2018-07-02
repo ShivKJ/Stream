@@ -1,5 +1,5 @@
-import unittest
 from collections import defaultdict
+from unittest import TestCase, main
 
 from streamAPI.stream.optional import EMPTY, Optional
 from streamAPI.stream.stream import Stream
@@ -8,7 +8,7 @@ from streamAPI.test.testHelper import random
 from streamAPI.utility.utils import identity
 
 
-class StreamTest(unittest.TestCase):
+class StreamTest(TestCase):
     def test_reduce(self):
         def _sum(a, b): return a + b
 
@@ -188,8 +188,7 @@ class StreamTest(unittest.TestCase):
 
         for _ in range(size):
             e = get()
-            k = None
-
+            
             if e <= 10:
                 k = 10
             elif e <= 20:
@@ -205,4 +204,4 @@ class StreamTest(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    main()
