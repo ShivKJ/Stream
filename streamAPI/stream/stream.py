@@ -207,6 +207,7 @@ class Stream(Closable, Generic[X]):
         :param itr:
         :return:
         """
+
         consumer_items = set()
 
         for item in itr:
@@ -466,8 +467,8 @@ class Stream(Closable, Generic[X]):
         return self.zip(cycle(itr), after=after)
 
     @check_pipeline
-    def if_else(self, predicate: Filter[X],
-                if_: Function[X, Y],
+    def if_else(self, if_: Filter[X],
+                then: Function[X, Y],
                 else_: Function[X, Y] = identity) -> 'Stream[Y]':
         """
         if predicate returns True then elements are transformed according to if_ otherwise else_
@@ -479,13 +480,13 @@ class Stream(Closable, Generic[X]):
             Stream(range(10)).condition(lambda x: 3 <= x <= 7, lambda x: 1 , lambda x: 0).as_seq()
             -> [0, 0, 0, 1, 1, 1, 1, 1, 0, 0]
 
-        :param predicate:
         :param if_:
+        :param then:
         :param else_:
         :return:
         """
 
-        return self.map(ChainedCondition.if_else(predicate, if_, else_).apply)
+        return self.map(ChainedCondition.if_else(if_, then, else_).apply)
 
     @check_pipeline
     def conditional(self, chained_condition: ChainedCondition):

@@ -208,7 +208,7 @@ class ChainedCondition(Closable, AbstractCondition):
         self._else_called = False
 
     @classmethod
-    def if_else(cls, if_, then, else_) -> 'ChainedCondition':
+    def if_else(cls, if_: Filter, then: Function, else_: Function) -> 'ChainedCondition':
         """
         Creates a ChainedCondition with given "if" and "else" condition.
 
