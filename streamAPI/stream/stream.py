@@ -483,10 +483,14 @@ class Stream(Generic[X]):
         return self.zip(cycle(itr), after=after)
 
     @check_pipeline
-    def if_else(self, predicate: Filter[X], if_: Function[X, Y], else_: Function[X, Y]) -> 'Stream[Y]':
+    def if_else(self, predicate: Filter[X],
+                if_: Function[X, Y],
+                else_: Function[X, Y] = identity) -> 'Stream[Y]':
         """
         if predicate returns True then elements are transformed according to if_ otherwise else_
-        function is used. This method is the special case of "conditional" method.
+        function is used. This method is the special case of "conditional" method. "else_" has
+        default value "identity" which return element as it is; that is if "if" condition (predicate)
+        does not return True then element is not modified.
 
         Example:
             Stream(range(10)).condition(lambda x: 3 <= x <= 7, lambda x: 1 , lambda x: 0).as_seq()
