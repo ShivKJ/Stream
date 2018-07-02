@@ -90,7 +90,7 @@ class Supplier(Iterable[X]):
 
     def __init__(self, func: Callable[[], X]):
         super().__init__()
-        
+
         self._func = func
 
     def __iter__(self):
@@ -198,7 +198,6 @@ class ChainedCondition(Closable, AbstractCondition):
         super().__init__()
 
         self._conditions: Deque[_IfThen] = deque()
-        self._closed = False
         self._name = name
         self._else_called = False
 
@@ -248,7 +247,9 @@ class ChainedCondition(Closable, AbstractCondition):
 
         if not self._conditions:
             raise AttributeError("No 'if' condition added.")
+
         self._else_called = True
+
         return self.if_then(always_true, else_)
 
     @close_pipeline
