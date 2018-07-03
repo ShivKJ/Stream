@@ -118,7 +118,8 @@ class StreamTest(TestCase):
                         resolve=lambda x, y: x + y))
 
         out_target = defaultdict(int)
-        rnd = random()
+
+        rnd.reset()
 
         for _ in range(size):
             out_target[0 if get() < 50 else 1] += 1
@@ -145,7 +146,7 @@ class StreamTest(TestCase):
                .mapping(identity, lambda x: 1, resolve=lambda x, y: x + y))
 
         out_target = defaultdict(int)
-        rnd = random()
+        rnd.reset()
 
         for _ in range(size):
             e = get()
@@ -184,11 +185,11 @@ class StreamTest(TestCase):
                .mapping(identity, lambda x: 1, resolve=lambda x, y: x + y))
 
         out_target = defaultdict(int)
-        rnd = random()
+        rnd.reset()
 
         for _ in range(size):
             e = get()
-            
+
             if e <= 10:
                 k = 10
             elif e <= 20:
