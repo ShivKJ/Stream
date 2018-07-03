@@ -1,5 +1,5 @@
 from functools import reduce, wraps
-from itertools import chain, cycle, dropwhile, islice, takewhile, zip_longest
+from itertools import accumulate, chain, cycle, dropwhile, islice, takewhile, zip_longest
 from typing import Any, Dict, Generic, Iterable, Sequence, Tuple, Union
 
 from streamAPI.stream.decos import check_pipeline, close_pipeline
@@ -512,6 +512,22 @@ class Stream(Closable, Generic[X]):
         """
 
         return self.map(chained_condition)
+
+    @check_pipeline
+    def accumulate(self, bi_func: BiFunction[X, X, X]) -> 'Stream[X]':
+        """
+        accumulates stream elements.
+
+        Example:
+            Stream(range(10)).accumulate(lambda x,y:x+y).as_seq()
+            -> [0, 1, 3, 6, 10, 15, 21, 28, 36, 45]
+
+        :param bi_func:
+        :return:
+        """
+
+        self._pointer = accumulate(self._pointer, bi_func)
+        return self
 
     def __next__(self) -> X:
         return next(self._pointer)

@@ -1,10 +1,10 @@
 import operator as op
-from functools import partial, reduce
+from functools import reduce
 from unittest import TestCase, main
 
 from streamAPI.stream.stream import Stream
 from streamAPI.stream.streamHelper import ChainedCondition
-from streamAPI.test.testHelper import multiply_xy, random, sum_xy
+from streamAPI.test.testHelper import random
 
 
 class Map(TestCase):
@@ -18,7 +18,7 @@ class Map(TestCase):
         rnd = self.rnd
         a, b, size = 1, 100, 1000
 
-        add_5 = partial(op.add, 5)
+        add_5 = lambda x: x + 5
         pow_3 = lambda x: x ** 3
 
         out = (Stream(rnd.int_range_supplier(a, b))
@@ -94,7 +94,7 @@ class Map(TestCase):
         out = Stream(rnd.int_range_supplier(a, b)) \
             .limit(size) \
             .map(pow_2) \
-            .reduce(sum_xy, 0) \
+            .reduce(op.add, 0) \
             .get()
 
         rnd.reset()
@@ -109,12 +109,12 @@ class Map(TestCase):
 
         out = Stream(rnd.int_range_supplier(a, b)) \
             .limit(size) \
-            .reduce(multiply_xy, 1) \
+            .reduce(op.mul, 1) \
             .get()
 
         rnd.reset()
 
-        out_target = reduce(multiply_xy, rnd.int_range(a, b, size=size))
+        out_target = reduce(op.mul, rnd.int_range(a, b, size=size))
 
         self.assertEqual(out, out_target)
 
@@ -129,14 +129,14 @@ class Map(TestCase):
         out = Stream(rnd.int_range_supplier(a, b)) \
             .limit(size) \
             .conditional(cc) \
-            .reduce(multiply_xy, 1) \
+            .reduce(op.mul, 1) \
             .get()
 
         rnd.reset()
 
         data = (cc(e) for e in rnd.int_range(a, b, size=size))
 
-        out_target = reduce(multiply_xy, data)
+        out_target = reduce(op.mul, data)
 
         self.assertEqual(out, out_target)
 
@@ -149,14 +149,14 @@ class Map(TestCase):
         out = Stream(rnd.int_range_supplier(a, b)) \
             .limit(size) \
             .conditional(cc) \
-            .reduce(multiply_xy, 1) \
+            .reduce(op.mul, 1) \
             .get()
 
         rnd.reset()
 
         data = (cc(e) for e in rnd.int_range(a, b, size=size))
 
-        out_target = reduce(multiply_xy, data)
+        out_target = reduce(op.mul, data)
 
         self.assertEqual(out, out_target)
 
@@ -177,7 +177,7 @@ class Map(TestCase):
 
         data = (e + r for e, r in zip(rnd.int_range(a, b, size=size), rng))
 
-        out_target = reduce(multiply_xy, data)
+        out_target = reduce(op.mul, data)
 
         self.assertEqual(out, out_target)
 
