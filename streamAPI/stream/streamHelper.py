@@ -111,6 +111,9 @@ class AbstractCondition(ABC):
         :return:
         """
 
+    def __call__(self, e):
+        return self.apply(e)
+
 
 class _IfThen(AbstractCondition):
     """

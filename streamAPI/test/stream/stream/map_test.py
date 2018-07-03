@@ -1,7 +1,10 @@
+import operator as op
+from functools import reduce
 from unittest import TestCase, main
 
 from streamAPI.stream.stream import Stream
-from streamAPI.test.testHelper import Adder, Modulus, Pow, random
+from streamAPI.stream.streamHelper import ChainedCondition
+from streamAPI.test.testHelper import random
 
 
 class Map(TestCase):
@@ -15,8 +18,8 @@ class Map(TestCase):
         rnd = self.rnd
         a, b, size = 1, 100, 1000
 
-        add_5 = Adder(5)
-        pow_3 = Pow(3)
+        add_5 = lambda x: x + 5
+        pow_3 = lambda x: x ** 3
 
         out = (Stream(rnd.int_range_supplier(a, b))
                .limit(size)
@@ -34,12 +37,12 @@ class Map(TestCase):
         rnd = self.rnd
         a, b, size = 1, 100, 1000
 
-        add_5 = Adder(5)
-        pow_3 = Pow(3)
+        add_5 = lambda x: x + 5
+        pow_3 = lambda x: x ** 3
 
-        mod_2_not_zero = Modulus(2).not_equal_to(0)
-        mod_3_not_2 = Modulus(3).not_equal_to(2)
-        mod_5_not_4 = Modulus(5).not_equal_to(4)
+        mod_2_not_zero = lambda x: x % 2 != 0
+        mod_3_not_2 = lambda x: x % 3 != 2
+        mod_5_not_4 = lambda x: x % 5 != 4
 
         out = (Stream(rnd.int_range_supplier(a, b))
                .limit(size)
@@ -70,7 +73,7 @@ class Map(TestCase):
         rnd = self.rnd
         a, b, size = 1, 100, 1000
 
-        pow_2 = Pow(2)
+        pow_2 = lambda x: x ** 2
 
         out = sum(Stream(rnd.int_range_supplier(a, b))
                   .limit(size)
@@ -79,6 +82,102 @@ class Map(TestCase):
         rnd.reset()
 
         out_target = sum(pow_2(e) for e in rnd.int_range(a, b, size=size))
+
+        self.assertEqual(out, out_target)
+
+    def test_map4(self):
+        rnd = self.rnd
+        a, b, size = 1, 100, 1000
+
+        pow_2 = lambda x: x ** 2
+
+        out = Stream(rnd.int_range_supplier(a, b)) \
+            .limit(size) \
+            .map(pow_2) \
+            .reduce(op.add, 0) \
+            .get()
+
+        rnd.reset()
+
+        out_target = sum(pow_2(e) for e in rnd.int_range(a, b, size=size))
+
+        self.assertEqual(out, out_target)
+
+    def test_map5(self):
+        rnd = self.rnd
+        a, b, size = 1, 100, 50
+
+        out = Stream(rnd.int_range_supplier(a, b)) \
+            .limit(size) \
+            .reduce(op.mul, 1) \
+            .get()
+
+        rnd.reset()
+
+        out_target = reduce(op.mul, rnd.int_range(a, b, size=size))
+
+        self.assertEqual(out, out_target)
+
+    def test_map6(self):
+        rnd = self.rnd
+        a, b, size = 1, 100, 50
+
+        cc = (ChainedCondition()
+              .if_then(lambda x: x < 50, lambda x: x ** 2)
+              .done())
+
+        out = Stream(rnd.int_range_supplier(a, b)) \
+            .limit(size) \
+            .conditional(cc) \
+            .reduce(op.mul, 1) \
+            .get()
+
+        rnd.reset()
+
+        data = (cc(e) for e in rnd.int_range(a, b, size=size))
+
+        out_target = reduce(op.mul, data)
+
+        self.assertEqual(out, out_target)
+
+    def test_map7(self):
+        rnd = self.rnd
+        a, b, size = 1, 100, 50
+
+        cc = (ChainedCondition.if_else(lambda x: x < 50, lambda x: x ** 2, lambda x: x % 50))
+
+        out = Stream(rnd.int_range_supplier(a, b)) \
+            .limit(size) \
+            .conditional(cc) \
+            .reduce(op.mul, 1) \
+            .get()
+
+        rnd.reset()
+
+        data = (cc(e) for e in rnd.int_range(a, b, size=size))
+
+        out_target = reduce(op.mul, data)
+
+        self.assertEqual(out, out_target)
+
+    def test_map8(self):
+        rnd = self.rnd
+        a, b, size = 1, 100, 50
+
+        rng = range(3, 70)
+
+        out = (Stream(rnd.int_range_supplier(a, b))
+               .limit(size)
+               .zip(rng)
+               .map(sum)
+               .reduce(op.mul, 1)
+               .get())
+
+        rnd.reset()
+
+        data = (e + r for e, r in zip(rnd.int_range(a, b, size=size), rng))
+
+        out_target = reduce(op.mul, data)
 
         self.assertEqual(out, out_target)
 
