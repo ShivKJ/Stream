@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod
+from abc import ABC
 from functools import partial
 from random import Random
 from sys import version as VERSION
@@ -57,7 +57,6 @@ class Logic(ABC):
     def __init__(self, logic=None):
         self._logic = logic
 
-    @abstractmethod
     def __call__(self, y) -> bool: return self._logic(y)
 
     def equal_to(self, y): return Logic(partial(equal, self, y))
