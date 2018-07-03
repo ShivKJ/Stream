@@ -36,17 +36,18 @@ class Map(TestCase):
 
         add_5 = Adder(5)
         pow_3 = Pow(3)
-        mod_2 = Modulus(2)
-        mod_3 = Modulus(3)
-        mod_5 = Modulus(5)
+
+        mod_2_not_zero = Modulus(2).not_equal_to(0)
+        mod_3_not_2 = Modulus(3).not_equal_to(2)
+        mod_5_not_4 = Modulus(5).not_equal_to(4)
 
         out = (Stream(rnd.int_range_supplier(a, b))
                .limit(size)
-               .filter(lambda e: mod_3(e) != 0)
+               .filter(mod_3_not_2)
                .map(add_5)
-               .filter(mod_2)
+               .filter(mod_2_not_zero)
                .map(pow_3)
-               .filter(lambda e: mod_5(e) != 0)
+               .filter(mod_5_not_4)
                .as_seq())
 
         rnd.reset()
@@ -54,13 +55,13 @@ class Map(TestCase):
         out_target = []
 
         for e in rnd.int_range(a, b, size=size):
-            if mod_3(e) != 0:
+            if mod_3_not_2(e):
                 e = add_5(e)
 
-                if mod_2(e):
+                if mod_2_not_zero(e):
                     e = pow_3(e)
 
-                    if mod_5(e) != 0:
+                    if mod_5_not_4(e):
                         out_target.append(e)
 
         self.assertListEqual(out, out_target)
