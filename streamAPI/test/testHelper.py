@@ -1,4 +1,3 @@
-from abc import ABC
 from functools import partial
 from random import Random
 from sys import version as VERSION
@@ -32,6 +31,68 @@ def random(seed=SEED, version=VERSION) -> RND:
     return rnd
 
 
+# -----------------------------------------------------------------
+def x_eq_y(x, y) -> bool: return x == y
+
+
+def eq(y): return partial(x_eq_y, y=y)
+
+
+def x_lt_y(x, y) -> bool: return x < y
+
+
+def lt(y): return partial(x_lt_y, y=y)
+
+
+def x_lte_y(x, y) -> bool: return x <= y
+
+
+def lte(y): return partial(x_lte_y, y=y)
+
+
+def x_gt_y(x, y) -> bool: return x > y
+
+
+def gt(y): return partial(x_gt_y, y=y)
+
+
+def x_gte_y(x, y) -> bool: return x >= y
+
+
+def gte(y): return partial(x_gte_y, y=y)
+
+
+def x_ne_y(x, y) -> bool: return x != y
+
+
+def ne(y): return partial(x_ne_y, y=y)
+
+
+def x_gte_y_lte_z(x, y, z): return y <= x <= z
+
+
+def gte_y_lte_z(y, z): return partial(x_gte_y_lte_z, y=y, z=z)
+
+
+def x_gt_y_lte_z(x, y, z): return y < x <= z
+
+
+def gt_y_lte_z(y, z): return partial(x_gt_y_lte_z, y=y, z=z)
+
+
+def x_gte_y_lt_z(x, y, z): return y <= x < z
+
+
+def gte_y_lt_z(y, z): return partial(x_gte_y_lt_z, y=y, z=z)
+
+
+def x_gt_y_lt_z(x, y, z): return y < x < z
+
+
+def gt_y_lt_z(y, z): return partial(x_gt_y_lt_z, y=y, z=z)
+
+
+# -----------------------------------
 def equal(self, target, x) -> bool: return self(x) == target
 
 
@@ -53,50 +114,19 @@ def or_(self, other, x) -> bool: return self(x) or other(x)
 def not_(self, x) -> bool: return not self(x)
 
 
-class Logic(ABC):
-    def __init__(self, logic=None):
-        self._logic = logic
-
-    def __call__(self, y) -> bool: return self._logic(y)
-
-    def equal_to(self, y): return Logic(partial(equal, self, y))
-
-    def not_equal_to(self, y): return Logic(partial(not_equal, self, y))
-
-    def less_than(self, y): return Logic(partial(less_than, self, y))
-
-    def greater_than(self, y): return Logic(partial(greater_than, self, y))
-
-    def and_(self, other): return Logic(partial(and_, self, other))
-
-    def or_(self, other): return Logic(partial(or_, self, other))
-
-    def not_(self): return Logic(partial(not_, self))
+def sum_xy(x, y):
+    return x + y
 
 
-class Adder(Logic):
-    def __init__(self, a):
-        super().__init__(None)
-
-        self._a = a
-
-    def __call__(self, x):
-        return self._a + x
+def multiply_xy(x, y):
+    return x * y
 
 
-class Pow(Logic):
-    def __init__(self, a):
-        super().__init__(None)
+def multiply(*args):
+    assert len(args) > 0, 'must have at least one element'
 
-        self._a = a
+    out = 1
 
-    def __call__(self, x): return x ** self._a
+    for e in args: out *= e
 
-
-class Modulus(Logic):
-    def __init__(self, a):
-        super().__init__(None)
-
-        self._a = a
-
-    def __call__(self, x): return x % self._a
+    return out

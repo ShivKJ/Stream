@@ -485,7 +485,7 @@ class Stream(Closable, Generic[X]):
         :return:
         """
 
-        return self.map(ChainedCondition.if_else(if_, then, else_).apply)
+        return self.map(ChainedCondition.if_else(if_, then, else_))
 
     @check_pipeline
     def conditional(self, chained_condition: ChainedCondition):
@@ -511,7 +511,7 @@ class Stream(Closable, Generic[X]):
         :return:
         """
 
-        return self.map(chained_condition.apply)
+        return self.map(chained_condition)
 
     def __next__(self) -> X:
         return next(self._pointer)
