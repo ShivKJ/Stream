@@ -8,8 +8,8 @@ from streamAPI.stream.streamHelper import (ChainedCondition, Closable, GroupByVa
                                            Supplier)
 from streamAPI.utility.Types import (BiFunction, Callable, Consumer,
                                      Function, T, X, Y, Z)
-from streamAPI.utility.utils import (Filter, divide_in_chunk,
-                                     get_functions_clazz, identity)
+from streamAPI.utility.utils import (Filter, divide_in_chunk, get_chunk, get_functions_clazz,
+                                     identity)
 
 NIL = object()
 
@@ -528,6 +528,56 @@ class Stream(Closable, Generic[X]):
 
         self._pointer = accumulate(self._pointer, bi_func)
         return self
+
+    @check_pipeline
+    def window_function(self, func, n: int) -> 'Stream[X]':
+        """
+        Example: Moving average for window size 3
+
+        Stream([1,6,2,7,3]).window_function(lambda l:sum(l) / 3 , 3).as_seq()
+        -> [3.0, 5.0, 4.0]
+
+
+        :param func: takes input, at any instant, as a tuple having
+               last "n-1" and current element.
+        :param n: natural number
+        :return:
+        """
+
+        self._pointer = map(func, self._fetch_next(self._pointer, n))
+        return self
+
+    @staticmethod
+    def _fetch_next(itr, n) -> Tuple[X, ...]:
+        """
+        Creates generator. Each element is tuple of size "n".
+
+        While iterating, first element will be first "n" elements of
+        Stream, next element will be old "n-1" elements appended with
+        next element of Stream and so on.
+
+        Note that if in first call to this generator, stream has less
+        than "n" element then ValueError will be thrown.
+
+        :param itr:
+        :param n: a positive integer
+        :return:
+        """
+
+        if n < 1:
+            raise ValueError("'n' must be natural number")
+
+        chunk = get_chunk(itr, n)
+
+        if len(chunk) < n:
+            # first chunk size must be than n
+            raise ValueError("Stream has less than '{}' elements ".format(n))
+
+        yield chunk
+
+        for e in itr:
+            chunk = chunk[1:] + (e,)
+            yield chunk
 
     def __next__(self) -> X:
         return next(self._pointer)
