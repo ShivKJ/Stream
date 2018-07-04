@@ -7,7 +7,7 @@ from logging import getLogger
 from operator import itemgetter
 from os import walk
 from os.path import abspath, join
-from typing import Callable, Dict, Iterable, List, Tuple
+from typing import Callable, Dict, Iterable, List, Tuple, Union
 
 from dateutil.parser import parse
 from psycopg2 import connect
@@ -15,7 +15,7 @@ from psycopg2.extensions import connection
 from psycopg2.extras import DictConnection
 from time import time
 
-from streamAPI.utility.Types import DateTime, Filter, Function, PathGenerator, T, X
+from streamAPI.utility.Types import DateTime, Filter, Function, PathGenerator, T, X, Y
 
 
 # --------------------------- The decorators -----------------------------------
@@ -386,10 +386,8 @@ def date_generator(start_date: DateTime, end_date: DateTime,
 
 
 # -----------------------------------------------------
-Chunk = Tuple[T, ...]
 
-
-def divide_in_chunk(docs: Iterable[T], chunk_size: int) -> Iterable[Chunk[T]]:
+def divide_in_chunk(docs: Iterable[T], chunk_size: int) -> Iterable[Tuple[T, ...]]:
     """
     divides list of elements in fixed size of chunks.
     Last chunk can have elements less than chunk_size.
@@ -403,21 +401,43 @@ def divide_in_chunk(docs: Iterable[T], chunk_size: int) -> Iterable[Chunk[T]]:
     itr = iter(docs)
     rng = range(chunk_size)
 
-    chunk = _next_chunk(itr, rng)
+    chunk = get_chunk(itr, rng)
 
     while chunk:
         yield chunk
-        chunk = _next_chunk(itr, rng)
+        chunk = get_chunk(itr, rng)
 
 
-def _next_chunk(itr: Iterable[T], rng: range) -> Chunk[T]:
+def get_chunk(itr: Iterable[T], rng: Union[range, int],
+              return_type: Callable[[Iterable[X]], Y] = tuple) -> Y:
     """
-    fetching one chunk from itr using rng class object
+    fetching one chunk from itr using rng class object.
+    In case, rng is an integer, it is converted as rng = range(rng)
+
+    Returned chunk size will be minimum of itr size and chunk size.
+
+    Note that: rng size can not be zero. If rng is not of type range then
+               it must be of type int which will represent chunk size and
+               it should be positive.
+
     :param itr:
     :param rng: defines chunk size
+    :param return_type:
     :return:
     """
-    return tuple(item[1] for item in zip(rng, itr))
+
+    if not isinstance(rng, (range, int)):
+        raise TypeError("rng should be either of type 'range' or "
+                        "'int' but given: {}".format(type(rng)))
+
+    if isinstance(rng, int):
+        assert rng > 0, 'chunk size must be positive'
+        rng = range(rng)
+
+    if not rng:
+        raise ValueError("Specified 'rng' argument is invalid")
+
+    return return_type(item[1] for item in zip(rng, itr))
 
 
 # ------------ importing function defined only in this module-------------
