@@ -179,8 +179,21 @@ class Stream(Closable, Generic[X]):
         :return: Stream itself
         """
 
-        self._pointer = sorted(self._pointer, key=comp, reverse=reverse)
+        self._pointer = Stream._yield_sorted(self._pointer, comp, reverse)
         return self
+
+    @staticmethod
+    def _yield_sorted(itr: Iterable[X], comp, reverse: bool) -> Iterable[X]:
+        """
+        Creates a generator having elements in sorted order.
+
+        :param itr:
+        :param comp:
+        :param reverse:
+        :return:
+        """
+
+        yield from sorted(itr, key=comp, reverse=reverse)
 
     @check_pipeline
     def distinct(self) -> 'Stream[X]':
