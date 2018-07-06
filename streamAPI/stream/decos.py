@@ -1,10 +1,6 @@
-from typing import TypeVar
-
 from decorator import decorator
 
 from streamAPI.stream.exception import PipelineClosed
-
-T = TypeVar('T')
 
 
 def _raise(is_closed: bool):
