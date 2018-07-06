@@ -224,6 +224,27 @@ class ParallelStream(Exec[T]):
     @close_pipeline
     @check_pipeline
     def for_each_concurrent(self, consumer: Consumer[X], timeout=None, batch_size=None):
+        """
+        This method differs from "for_each" method in the way that it consumes
+        stream elements concurrently.
+
+        Example:
+            from time import sleep
+            from streamAPI.test.testHelper import random
+
+            rnd = random(seed=None)
+
+            def process(e):
+                sleep(rnd.random())
+                print(e)
+
+            ParallelStream(range(10)).for_each_concurrent(process)
+
+        :param consumer: function to consume stream elements.
+        :param timeout: if None, there is no limit on execution time.
+        :param batch_size: If it is None then number of worker is used.
+        """
+
         for _ in self._parallel_processor(consumer, timeout=timeout, batch_size=batch_size):
             pass
 
