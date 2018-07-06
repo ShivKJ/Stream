@@ -17,12 +17,12 @@ class Exec(Stream[T]):
                  worker: int = None,
                  multiprocessing: bool = True):
         """
-        Initialises executor, used for concurrently processing
+        Initialises executor which is used for concurrently processing
         stream elements.
 
-        If worker is None, then in case of multiprocessing number of cpu in
+        If "worker" is None, then in case of multiprocessing number of cpu in
         the system is used and in case of multiThreading (i.e multiprocessing = False)
-        worker is 5 * cpu_count().
+        "worker" is 5 * cpu_count().
 
         :param data:
         :param worker: number of worker
@@ -122,7 +122,12 @@ class ParallelStream(Exec[T]):
                  worker: int = None,
                  multiprocessing: bool = True):
         """
-        Creates a parallel stream.
+        Initialises executor which is used for concurrently processing
+        stream elements.
+
+        If "worker" is None, then in case of multiprocessing number of cpu in
+        the system is used and in case of multiThreading (i.e multiprocessing = False)
+        "worker" is 5 * cpu_count().
 
         :param data:
         :param worker: number of worker
