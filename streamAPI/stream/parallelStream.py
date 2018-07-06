@@ -3,19 +3,27 @@ from concurrent.futures import (Executor, Future, ProcessPoolExecutor as PPE,
                                 ThreadPoolExecutor as TPE, as_completed)
 from functools import partial, wraps
 from operator import itemgetter
+from os import cpu_count
 from typing import Deque, Iterable
 
-from streamAPI.stream.decos import check_pipeline
+from streamAPI.stream.decos import check_pipeline, close_pipeline
 from streamAPI.stream.stream import Stream
-from streamAPI.utility.Types import (Filter, Function, T, X)
+from streamAPI.utility.Types import Consumer, Filter, Function, T, X
 from streamAPI.utility.utils import get_functions_clazz
 
 
 class Exec(Stream[T]):
     def __init__(self, data: Iterable[T],
-                 worker: int,
+                 worker: int = None,
                  multiprocessing: bool = True):
         """
+        Initialises executor, used for concurrently processing
+        stream elements.
+
+        If worker is None, then in case of multiprocessing number of cpu in
+        the system is used and in case of multiThreading (i.e multiprocessing = False)
+        worker is 5 * cpu_count().
+
         :param data:
         :param worker: number of worker
         :param multiprocessing: it True then multiprocessing is used else multiThreading.
@@ -24,8 +32,28 @@ class Exec(Stream[T]):
         super().__init__(data)
 
         self._registered_jobs: Deque[Future] = deque()
+
+        if worker is None:
+            worker = Exec._default_worker(multiprocessing)
+
         self._exec: Executor = (PPE if multiprocessing else TPE)(max_workers=worker)
         self._worker = worker
+
+    @staticmethod
+    def _default_worker(multiprocessing: bool):
+        """
+        returns number of worker for concurrent processing of stream elements.
+
+        In case of multiprocessing, it is number of cpu_count() and for
+        multiThreading it is 5 times cpu_count().
+
+        :param multiprocessing:
+        :return:
+        """
+
+        worker = cpu_count() or 1
+
+        return worker if multiprocessing else 5 * worker
 
     def _parallel_processor(self: 'ParallelStream[T]', func, timeout=None, batch_size=None) -> Stream[T]:
         """
@@ -40,6 +68,7 @@ class Exec(Stream[T]):
         """
 
         batch_size = batch_size or self._worker
+
         assert batch_size > 0, 'Batch size must be positive.'
 
         stream = (Stream(iter(self._pointer))
@@ -90,7 +119,7 @@ class Exec(Stream[T]):
 
 class ParallelStream(Exec[T]):
     def __init__(self, data: Iterable[T],
-                 worker: int,
+                 worker: int = None,
                  multiprocessing: bool = True):
         """
         Creates a parallel stream.
@@ -190,6 +219,13 @@ class ParallelStream(Exec[T]):
     done = Exec._stop_all_jobs(Stream.done)
     for_each = Exec._stop_all_jobs(Stream.for_each)
     __iter__ = Exec._stop_all_jobs(Stream.__iter__)
+
+    @Exec._stop_all_jobs
+    @close_pipeline
+    @check_pipeline
+    def for_each_concurrent(self, consumer: Consumer[X], timeout=None, batch_size=None):
+        for _ in self._parallel_processor(consumer, timeout=timeout, batch_size=batch_size):
+            pass
 
 
 if __name__ == 'streamAPI.stream.parallelStream':
