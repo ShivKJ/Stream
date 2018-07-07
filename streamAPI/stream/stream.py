@@ -1097,7 +1097,7 @@ class Stream(Closable, Generic[X]):
         for e in self._pointer:
             collector.consume(e)
 
-        return collector.finisher()
+        return collector.finish()
 
     @close_pipeline
     @check_pipeline

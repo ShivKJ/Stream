@@ -17,7 +17,7 @@ class Collector(ABC):
         pass
 
     @abstractmethod
-    def finisher(self):
+    def finish(self):
         pass
 
 
@@ -38,7 +38,7 @@ class DataHolder(Collector):
     @abstractmethod
     def consume(self, e): pass
 
-    def finisher(self):
+    def finish(self):
         return self._data_holder
 
 
@@ -69,8 +69,8 @@ class CollectAndThen(Collector):
     def consume(self, e):
         self._collector.consume(e)
 
-    def finisher(self):
-        return self._func(self._collector.finisher())
+    def finish(self):
+        return self._func(self._collector.finish())
 
 
 class ToMap(Collector):
@@ -97,7 +97,7 @@ class ToMap(Collector):
         else:
             self._data_holder[bkt] = self._value_mapper(e)
 
-    def finisher(self):
+    def finish(self):
         return self._data_holder
 
 
@@ -112,8 +112,8 @@ class Mapping(Collector):
     def consume(self, e):
         self._downstream.consume(self._func(e))
 
-    def finisher(self):
-        return self._downstream.finisher()
+    def finish(self):
+        return self._downstream.finish()
 
 
 class MaxBy(Collector):
@@ -130,7 +130,7 @@ class MaxBy(Collector):
         elif self._comp(e, self._max) > 0:
             self._max = e
 
-    def finisher(self):
+    def finish(self):
         return self._max
 
 
@@ -148,7 +148,7 @@ class MinBy(Collector):
         elif self._comp(e, self._min) < 0:
             self._min = e
 
-    def finisher(self):
+    def finish(self):
         return self._min
 
 
@@ -162,7 +162,7 @@ class Joining(DataHolder):
     def consume(self, e):
         self._data_holder.append(e)
 
-    def finisher(self):
+    def finish(self):
         return '{}{}{}'.format(self.prefix, self.sep.join(self._data_holder), self.suffix)
 
 
@@ -176,7 +176,7 @@ class Counting(Collector):
     def consume(self, e):
         self._count += 1
 
-    def finisher(self):
+    def finish(self):
         return self._count
 
 
@@ -196,7 +196,7 @@ class Reduce(Collector):
         else:
             self._data_holder = self._bi_func(self._data_holder, e)
 
-    def finisher(self):
+    def finish(self):
         e = self._data_holder
 
         return Optional(e) if e is not NIL else EMPTY
@@ -227,5 +227,5 @@ class GroupingBy(Collector):
     def consume(self, e):
         self._get(self._group_by(e)).consume(e)
 
-    def finisher(self):
-        return {k: v.finisher() for k, v in self._bucket.items()}
+    def finish(self):
+        return {k: v.finish() for k, v in self._bucket.items()}
