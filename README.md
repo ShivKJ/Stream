@@ -9,4 +9,4 @@
 ### What is this repository for? ###
 
 * This repo provides utility code. Stream API can be used to create chained method which is more readable.
-* 1.7
+* 1.8
