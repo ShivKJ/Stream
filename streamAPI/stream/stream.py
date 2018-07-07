@@ -2,16 +2,13 @@ from functools import reduce, wraps
 from itertools import accumulate, chain, cycle, dropwhile, islice, takewhile, zip_longest
 from typing import Any, Dict, Generic, Iterable, Sequence, Tuple, Union
 
+from streamAPI.stream.TerminalOperations import Collector
 from streamAPI.stream.decos import check_pipeline, close_pipeline
 from streamAPI.stream.optional import EMPTY, Optional
 from streamAPI.stream.streamHelper import (ChainedCondition, Closable, GroupByBucketType, ListType,
                                            Supplier)
-from streamAPI.utility.Types import (BiFunction, Callable, Consumer,
-                                     Function, T, X, Y, Z)
-from streamAPI.utility.utils import (Filter, divide_in_chunk, get_chunk, get_functions_clazz,
-                                     identity)
-
-NIL = object()
+from streamAPI.utility.Types import BiFunction, Callable, Consumer, Filter, Function, T, X, Y, Z
+from streamAPI.utility.utils import NIL, divide_in_chunk, get_chunk, get_functions_clazz, identity
 
 
 class Stream(Closable, Generic[X]):
@@ -1093,6 +1090,14 @@ class Stream(Closable, Generic[X]):
 
         for _ in self._pointer:
             pass
+
+    @close_pipeline
+    @check_pipeline
+    def collect(self, collector: Collector):
+        for e in self._pointer:
+            collector.consume(e)
+
+        return collector.finisher()
 
     @close_pipeline
     @check_pipeline

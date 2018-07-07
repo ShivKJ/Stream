@@ -31,8 +31,8 @@ class GroupByBucketType(type):
     Here we implement two Class ListType and SetType.
     """
 
-    def __init__(cls, *args, **kwargs):
-        type.__init__(cls, *args, **kwargs)
+    def __new__(meta, name, bases, class_dict):
+        return type.__new__(meta, name, bases, class_dict)
 
     @abstractmethod
     def add(self, o):

@@ -13,6 +13,8 @@ from time import time
 
 from streamAPI.utility.Types import DateTime, Filter, Function, PathGenerator, T, X, Y
 
+NIL = object()
+
 
 # --------------------------- The decorators -----------------------------------
 def execution_time(logger_name: str = None, prefix: str = None):
@@ -479,6 +481,22 @@ def get_chunk(itr: Iterable[T], rng: Union[range, int],
         raise ValueError("Specified 'rng' argument is invalid")
 
     return return_type(item[1] for item in zip(rng, itr))
+
+
+# -------------------------- Comparator ----------------------------------
+def default_comp(a, b) -> int:
+    """
+    compares 'a' and 'b'.
+
+    :param a:
+    :param b:
+    :return:
+    """
+    if a < b:
+        return -1
+    elif a == b:
+        return 0
+    return 1
 
 
 # ------------ importing function defined only in this module-------------
