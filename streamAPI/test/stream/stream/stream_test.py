@@ -42,16 +42,16 @@ class StreamTest(TestCase):
         self.assertListEqual(out, [(0, 4), (1, 5), (2, 6), (3, 7), (4, 8), (5, 9)])
 
     def test_group_by(self):
-        out = Stream(range(10)).group_by(key_hasher=lambda x: x % 3)
+        out = Stream(range(10)).group_by(group_by=lambda x: x % 3)
         self.assertDictEqual(out, {0: [0, 3, 6, 9], 1: [1, 4, 7], 2: [2, 5, 8]})
 
-        out = Stream(range(10)).group_by(key_hasher=lambda x: x % 3, value_mapper=lambda x: x ** 2)
+        out = Stream(range(10)).group_by(group_by=lambda x: x % 3, value_mapper=lambda x: x ** 2)
         self.assertDictEqual(out, {0: [0, 9, 36, 81], 1: [1, 16, 49], 2: [4, 25, 64]})
 
-        out = Stream([1, 2, 3, 4, 2, 4]).group_by(lambda x: x % 2, value_container_clazz=ListType)
+        out = Stream([1, 2, 3, 4, 2, 4]).group_by(lambda x: x % 2, bucket_type=ListType)
         self.assertDictEqual(out, {1: [1, 3], 0: [2, 4, 2, 4]})
 
-        out = Stream([1, 2, 3, 4, 2, 4]).group_by(lambda x: x % 2, value_container_clazz=SetType)
+        out = Stream([1, 2, 3, 4, 2, 4]).group_by(lambda x: x % 2, bucket_type=SetType)
         self.assertDictEqual(out, {1: {1, 3}, 0: {2, 4}})
 
     def test_zip(self):

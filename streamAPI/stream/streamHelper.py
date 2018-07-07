@@ -9,22 +9,22 @@ from streamAPI.utility.Types import Filter, Function, X
 from streamAPI.utility.utils import always_true, get_functions_clazz
 
 
-class GroupByValueType(type):
+class GroupByBucketType(type):
     """
     In group_by method of Stream class, we may want to
     used customised container type for value holding.
 
     For example:
-        Stream([1,2,5,1,3,4,2]).group_by(lambda x:x%2)
+        Stream([1, 2, 5, 1, 3, 4, 2]).group_by(lambda x:x%2)
         -> {1: [1, 5, 1, 3], 0: [2, 4, 2]}
 
         Here value container class is List.
 
         If we want value container class to be Set
-        Stream([1, 2, 5, 1, 3, 4, 2]).group_by(lambda x: x % 2, value_container_clazz=SetType)
+        Stream([1, 2, 5, 1, 3, 4, 2]).group_by(lambda x: x % 2, bucket_type=SetType)
         -> {1: {1, 3, 5}, 0: {2, 4}}
 
-    By default, value container class will be of Type List. In case we want it be of
+    By default, "bucket_type" will be of Type List. In case we want it be of
     specific type, then the class has to implement "add" method. This can be fulfilled by
     making GroupByValueType class as a meta class.
 
@@ -39,12 +39,12 @@ class GroupByValueType(type):
         pass
 
 
-class ListType(list, metaclass=GroupByValueType):
+class ListType(list, metaclass=GroupByBucketType):
     """
-    This is the default choice of class for holding value after "group_by"
-    operation on Stream class object.
+    This is the default choice of class type for "bucket",
+    in "group_by" method of Stream.
 
-    Stream([1,2,5,1,3,4,2]).group_by(lambda x:x%2,value_container_clazz=ListType)
+    Stream([1,2,5,1,3,4,2]).group_by(lambda x : x % 2, bucket_type=ListType)
     -> {1: [1, 5, 1, 3], 0: [2, 4, 2]}
     """
 
@@ -55,9 +55,9 @@ class ListType(list, metaclass=GroupByValueType):
         return self.append(o)
 
 
-class SetType(set, metaclass=GroupByValueType):
+class SetType(set, metaclass=GroupByBucketType):
     """
-    Stream([1,2,5,1,3,4,2]).group_by(lambda x:x%2,value_container_clazz=SetType)
+    Stream([1,2,5,1,3,4,2]).group_by(lambda x:x%2,bucket_type=SetType)
     -> {1: {1, 3, 5}, 0: {2, 4}}
     """
 

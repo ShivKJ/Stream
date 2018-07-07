@@ -4,7 +4,7 @@ from concurrent.futures import (Executor, Future, ProcessPoolExecutor as PPE,
 from functools import partial, wraps
 from operator import itemgetter
 from os import cpu_count
-from typing import Deque, Iterable
+from typing import Deque, Iterable, Tuple
 
 from streamAPI.stream.decos import check_pipeline, close_pipeline
 from streamAPI.stream.stream import Stream
@@ -17,8 +17,7 @@ class Exec(Stream[T]):
                  worker: int = None,
                  multiprocessing: bool = True):
         """
-        Initialises executor which is used for concurrently processing
-        stream elements.
+        Initialises executor which will be used for processing stream elements.
 
         If "worker" is None, then in case of multiprocessing number of cpu in
         the system is used and in case of multiThreading (i.e multiprocessing = False)
@@ -137,12 +136,12 @@ class ParallelStream(Exec[T]):
         super().__init__(data=data, worker=worker, multiprocessing=multiprocessing)
 
     @staticmethod
-    def _batch_process(func: Function[T, X], gs: Iterable[T]) -> Iterable[X]:
+    def _batch_process(func: Function[T, X], gs: Iterable[T]) -> Tuple[X, ...]:
         """
-        Applies function "func" on data points "gs" and returns
-        transformed list of data points.
+        Applies function "func" on data points "gs" and returns tuple of
+        transformed data points.
 
-        :param func:
+        :param func: transforming function
         :param gs:
 
         :return:
@@ -156,10 +155,9 @@ class ParallelStream(Exec[T]):
         This method is advised to be invoked when using MultiProcessing.
 
         Usually dispatching single unit of work (that is applying function on
-        a element) is less costly. So it is better to send batch of data to
+        a element) is less costly. So it is better to send a batch of elements to
         a worker. Here "dispatch_size" is size of dispatch i.e. this many number
         of stream elements will be sent to each processor(worker) in one go.
-        Note that number of worker used will be same as "_worker".
 
         :param func:
         :param dispatch_size: number of stream elements to be given to each worker
@@ -209,7 +207,6 @@ class ParallelStream(Exec[T]):
         return self
 
     # terminal operation will trigger cancelling of submitted unnecessary jobs.
-    partition = Exec._stop_all_jobs(Stream.partition)
     count = Exec._stop_all_jobs(Stream.count)
     min = Exec._stop_all_jobs(Stream.min)
     max = Exec._stop_all_jobs(Stream.max)

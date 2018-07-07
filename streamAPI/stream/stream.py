@@ -4,7 +4,7 @@ from typing import Any, Dict, Generic, Iterable, Sequence, Tuple, Union
 
 from streamAPI.stream.decos import check_pipeline, close_pipeline
 from streamAPI.stream.optional import EMPTY, Optional
-from streamAPI.stream.streamHelper import (ChainedCondition, Closable, GroupByValueType, ListType,
+from streamAPI.stream.streamHelper import (ChainedCondition, Closable, GroupByBucketType, ListType,
                                            Supplier)
 from streamAPI.utility.Types import (BiFunction, Callable, Consumer,
                                      Function, T, X, Y, Z)
@@ -18,9 +18,10 @@ class Stream(Closable, Generic[X]):
     """
     This class can be used to create pipeline operation on given
     iterable object.
+
     There are two type of operation that can be performed on Stream:
     1) Intermediate (i.e. map, flat_map, filter, peek, distinct, sort, batch, cycle, take_while, drop_while etc.)
-    2) Terminal (min, max, as_seq, group_by, partition, all, any, none_match, for_each)
+    2) Terminal (min, max, as_seq, group_by, all, any, none_match, for_each etc.)
 
     Until terminal operation is called, no execution takes place.
     Some of the examples are given below.
@@ -56,7 +57,7 @@ class Stream(Closable, Generic[X]):
             [name=C,age=11,sex=Female],
             [name=D,age=17,sex=Male]]
 
-        Stream(students).filter(lambda x:x.age<20).partition(lambda x:x.sex)
+        Stream(students).filter(lambda x:x.age<20).group_by(lambda x:x.sex)
         -> {True: [[name=A,age=10,sex=Male],
                    [name=B,age=8,sex=Male],
                    [name=D,age=17,sex=Male]],
@@ -101,7 +102,9 @@ class Stream(Closable, Generic[X]):
     @classmethod
     def from_supplier(cls, func: Callable[[], X], *args, **kwargs) -> 'Stream[X]':
         """
-        Generates a stream from a callable function.
+
+        Generates a stream from a callable function.(see Supplier class in
+        streamHelper module for more detail).
 
         :param func:
         :param args: positional arguments required instantiate cls
@@ -130,7 +133,9 @@ class Stream(Closable, Generic[X]):
     @check_pipeline
     def filter(self, predicate: Filter[X]) -> 'Stream[X]':
         """
-        Filters elements from Stream.
+        Filters elements from Stream, i.e. if predicates evaluates an
+        element as False, then the elements is not considered for
+        further processing.
 
         Example:
             stream = Stream(range(5)).filter(lambda x: x%2 == 1)
@@ -231,7 +236,7 @@ class Stream(Closable, Generic[X]):
     @check_pipeline
     def limit(self, n: int) -> 'Stream[X]':
         """
-        limits number of element in stream.
+        limits number of elements for further processing.
 
         Example:
             stream = Stream(range(10)).limit(3)
@@ -266,6 +271,7 @@ class Stream(Closable, Generic[X]):
     def peek_after_each(self, consumer: Consumer[X], n: int) -> 'Stream[X]':
         """
         processes element while streaming. Consumer is called after each nth item.
+
         Example:
             def f(x): return 2*x
 
@@ -308,7 +314,7 @@ class Stream(Closable, Generic[X]):
     @check_pipeline
     def skip(self, n: int) -> 'Stream[X]':
         """
-        Skips n number of element from Stream
+        Skips "n" number of elements for further processing.
 
         Example:
             stream = Stream(range(10)).skip(7)
@@ -324,7 +330,7 @@ class Stream(Closable, Generic[X]):
     @check_pipeline
     def flat_map(self) -> 'Stream[X]':
         """
-        flats the stream if each element is iterable.
+        flats Stream of Iterable.
 
         Example:
             stream = Stream([[1,2],[3,4,5]]).flat_map()
@@ -339,7 +345,7 @@ class Stream(Closable, Generic[X]):
     @check_pipeline
     def batch(self, n: int):
         """
-        creates batches of size n from stream.
+        creates batches of size "n" for further processing.
 
         Example:
             Stream(range(10)).batch(3).as_seq()
@@ -355,8 +361,8 @@ class Stream(Closable, Generic[X]):
     @check_pipeline
     def enumerate(self, start=0):
         """
-        create stream of tuples where first entry is index and
-        another is data itself.
+        create stream of tuples where first entry is the index and
+        another is stream element.
 
         Example:
             Stream(range(4,10)).enumerate().as_seq()
@@ -376,7 +382,7 @@ class Stream(Closable, Generic[X]):
     def take_while(self, predicate: Filter[X]) -> 'Stream[X]':
         """
         processes the element of stream till the predicate returns True.
-        It is similar to "while" keyword of python.
+        It is similar to "while" keyword.
 
         Stream(range(10)).till(lambda x:x < 5).as_seq() -> [0,1,2,3,4]
 
@@ -390,7 +396,7 @@ class Stream(Closable, Generic[X]):
     @check_pipeline
     def drop_while(self, predicate: Filter[X]) -> 'Stream[X]':
         """
-        drops elements until predicate returns False
+        drops elements until predicate returns False.
 
         stream.Stream(range(10)).drop_while(lambda x : x < 5).as_seq() -> [5, 6, 7, 8, 9]
 
@@ -451,8 +457,8 @@ class Stream(Closable, Generic[X]):
             -> [(0, 11), (1, 12), (2, -1), (3, -1), (4, -1)]
 
         :param itr:
-        :param after:
-        :param fillvalue:
+        :param after:defaults to True
+        :param fillvalue: defaults to None.
         :return:
         """
 
@@ -466,14 +472,14 @@ class Stream(Closable, Generic[X]):
     @check_pipeline
     def cycle(self, itr: Iterable[Y], after=True) -> 'Stream[Tuple]':
         """
-        Repeats iterable "itr" with stream until stream is exhausted.
+        Repeats iterable "itr" with stream until the Stream is exhausted.
 
         Example:
             Stream(range(11, 16)).cycle(range(3),after=False).as_seq()
             -> [(0, 11), (1, 12), (2, 13), (0, 14), (1, 15)]
 
         :param itr:
-        :param after:
+        :param after: defaults to True
         :return:
         """
 
@@ -494,7 +500,7 @@ class Stream(Closable, Generic[X]):
 
         :param if_:
         :param then:
-        :param else_:
+        :param else_: by default it returns element as it is.
         :return:
         """
 
@@ -529,11 +535,16 @@ class Stream(Closable, Generic[X]):
     @check_pipeline
     def accumulate(self, bi_func: BiFunction[X, X, X]) -> 'Stream[X]':
         """
-        accumulates stream elements.
+        accumulates stream elements using given "bi_func"
 
         Example:
-            Stream(range(10)).accumulate(lambda x,y:x+y).as_seq()
+            import operator as op
+
+            Stream(range(10)).accumulate(op.add).as_seq()
             -> [0, 1, 3, 6, 10, 15, 21, 28, 36, 45]
+
+            Stream(range(1,10)).accumulate(op.mul).as_seq()
+            -> [1, 2, 6, 24, 120, 720, 5040, 40320, 362880]
 
         :param bi_func:
         :return:
@@ -545,14 +556,17 @@ class Stream(Closable, Generic[X]):
     @check_pipeline
     def window_function(self, func, n: int) -> 'Stream[X]':
         """
-        Example: Moving average for window size 3
+        Applies function "func" on "n" elements of stream.
 
-        Stream([1,6,2,7,3]).window_function(lambda l:sum(l) / 3 , 3).as_seq()
-        -> [3.0, 5.0, 4.0]
+        Example: Moving average for window size 3
+            def mean(l): return sum(l)/len(l)
+
+            Stream([1,6,2,7,3]).window_function(mean , 3).as_seq()
+            -> [3.0, 5.0, 4.0]
 
 
         :param func: takes input, at any instant, as a tuple having
-               last "n-1" and current element.
+               earlier "n-1" elements appended with current element.
         :param n: natural number
         :return:
         """
@@ -573,7 +587,7 @@ class Stream(Closable, Generic[X]):
         than "n" element then ValueError will be thrown.
 
         :param itr:
-        :param n: a positive integer
+        :param n: a natural number
         :return:
         """
 
@@ -582,8 +596,8 @@ class Stream(Closable, Generic[X]):
 
         chunk = get_chunk(itr, n)
 
-        if len(chunk) < n:
-            # first chunk size must be than n
+        if len(chunk) != n:
+            # first chunk size must be "n".
             raise ValueError("Stream has less than '{}' elements ".format(n))
 
         yield chunk
@@ -595,28 +609,15 @@ class Stream(Closable, Generic[X]):
     def __next__(self) -> X:
         return next(self._pointer)
 
-    @close_pipeline
-    @check_pipeline
-    def partition(self, mapper: Filter[X] = bool) -> Dict[bool, Sequence[X]]:
-        """
-        This operation is one of the terminal operations
-        partition elements depending on mapper.
-
-        Example:
-            stream = Stream(range(6))
-            stream.partition(mapper=lambda x: x%2) -> {0:[0, 2, 4], 1:[1, 3, 5]}
-
-        :param mapper:
-        :return: Stream itself
-        """
-
-        return self.group_by(mapper)
+    # -------------------------- Terminal Operations ---------------------------
 
     @close_pipeline
     @check_pipeline
     def count(self) -> int:
         """
-        This operation is one of the terminal operations
+        This operation is one of the terminal operations.
+
+        Finds number of elements in stream.
 
         Example:
             Stream(range(10)).count() -> 10
@@ -631,7 +632,7 @@ class Stream(Closable, Generic[X]):
     def min(self, comp=None) -> Optional[Any]:
         """
         This operation is one of the terminal operations
-        finds minimum element of Stream
+        finds minimum element in stream.
 
         Example1:
             stream = Stream([3,1,5])
@@ -670,7 +671,7 @@ class Stream(Closable, Generic[X]):
     def max(self, comp=None) -> Optional[Any]:
         """
         This operation is one of the terminal operations.
-        finds maximum element of Stream
+        finds maximum element in stream.
 
         Example1:
             stream = Stream([3,1,5])
@@ -706,50 +707,82 @@ class Stream(Closable, Generic[X]):
 
     @close_pipeline
     @check_pipeline
-    def group_by(self, key_hasher, value_mapper: Function[X, Y] = identity,
-                 value_container_clazz: GroupByValueType = ListType) -> Dict[Any, Sequence[Y]]:
+    def group_by(self, group_by, value_mapper: Function[X, Y] = identity,
+                 collect_and_then=None,
+                 bucket_type: GroupByBucketType = ListType) -> Dict[Any, Sequence[Y]]:
         """
         This operation is one of the terminal operations
-        group by stream element using key_hasher.
+
+        Grouping by stream elements using "group_by" function and hence creating "buckets".
+
+        Element will be transformed using "value_mapper" before putting in corresponding "bucket".
+
+        "collect_and_then" is a function which takes in input as all elements in a "bucket"
+        and returns desired output which will be set to corresponding bucket's value.
+
+        "bucket_type" defines type of "bucket". It can be of type ListType or SetType. User
+        can specify their custom type by making class's meta-class to be "GroupByBucketType"
+        (See streamHelper module).
 
         Example1:
             stream  = Stream(range(10))
-            stream.group_by(key_hasher=lambda x: x%3) -> {0:[0, 3, 6, 9], 1:[1, 4, 7], 2:[2, 5, 8]}
+            stream.group_by(group_by=lambda x: x%3) -> {0:[0, 3, 6, 9], 1:[1, 4, 7], 2:[2, 5, 8]}
 
         Example2:
             stream  = Stream(range(10))
-            stream.group_by(key_hasher=lambda x: x%3,value_mapper=lambda x: x**2)
+            stream.group_by(group_by=lambda x: x%3,value_mapper=lambda x: x**2)
             -> {0:[0, 9, 36, 81], 1:[1, 16, 49], 2:[4, 25, 64]}
 
         Example3:
-            out = Stream([1, 2, 3, 4, 2, 4]).group_by(lambda x:x%2,value_container_type=ListType)
+            out = Stream([1, 2, 3, 4, 2, 4]).group_by(lambda x:x%2,bucket_type=ListType)
             -> {1: [1, 3], 0: [2, 4, 2, 4]}
 
-            out =Stream([1, 2, 3, 4, 2, 4]).group_by(lambda x:x%2,value_container_type=SetType)
+            out =Stream([1, 2, 3, 4, 2, 4]).group_by(lambda x:x%2,bucket_type=SetType)
             -> {1: {1, 3}, 0: {2, 4}}
 
-        :param key_hasher:
+        Example4:
+            Stream(range(9)).group_by(lambda x:x%2,collect_and_then=len) -> {0: 5, 1: 4}
+
+        :param group_by:
         :param value_mapper:
-        :param value_container_clazz:
+        :param collect_and_then:
+        :param bucket_type:
         :return:
         """
 
         out = {}
 
         for elem in self._pointer:
-            Stream._update(out, key_hasher(elem), value_mapper(elem), value_container_clazz)
+            Stream._update(out, group_by(elem), value_mapper(elem), bucket_type)
+
+        if collect_and_then is not None:
+            for k, v in out.items():
+                out[k] = collect_and_then(v)
 
         return out
 
     @staticmethod
-    def _update(d: dict, k, v: X, value_container_clazz: GroupByValueType):
-        if k not in d:
-            pt = value_container_clazz()
-            d[k] = pt
-        else:
-            pt = d[k]
+    def _update(buckets: dict, bucket, e, bucket_class: GroupByBucketType):
+        """
+        Updates "buckets" (that is the mapping from bucket to data points in the bucket)
+        using given "bucket" and element "e" to be put in bucket.
 
-        pt.add(v)
+        In case "bucket" does not exists then a new bucket is created using "bucket_class".
+
+        :param buckets:
+        :param bucket:
+        :param e:
+        :param bucket_class:
+        :return:
+        """
+
+        if bucket not in buckets:
+            pts = bucket_class()
+            buckets[bucket] = pts
+        else:
+            pts = buckets[bucket]
+
+        pts.add(e)
 
     @close_pipeline
     @check_pipeline
@@ -758,7 +791,7 @@ class Stream(Closable, Generic[X]):
                 resolve: BiFunction[Y, Y, Z] = None) -> Dict[T, Union[Y, Z]]:
         """
         This operation is one of the terminal operations
-        creates mapping from stream element.
+        creates a mapping from stream element using "key_mapper" and "value_mapper".
 
         Example:
             class Student:
@@ -769,6 +802,7 @@ class Stream(Closable, Generic[X]):
             students = Stream([Student('a',1),Student('b',2),Student('a', 3)])
             students.mapping(key_mapper=lambda x:x.id, value_mapper=lambda x:x.name)
             -> {1: 'a', 2:'b', 3:'c'}
+
         Notice that elements after operated upon by function "key_mapper" must be
         unique. In case of duplicity, ValueError is thrown.
 
@@ -781,12 +815,13 @@ class Stream(Closable, Generic[X]):
         will take oldValue and newValue and return a value which will be set
         for the key.
 
-        out = Stream([1,2,3,4,5,6]).mapping(lambda x: x%2 ,lambda x:x, lambda o,n : o + n)
+        import operator as op
+
+        out = Stream([1,2,3,4,5,6]).mapping(lambda x: x%2 ,lambda x:x, op.add)
         print (out) # prints {0:12, 1: 9}
 
-
         :param key_mapper:
-        :param value_mapper:
+        :param value_mapper: defaults to identity
         :param resolve
         :return:
         """
@@ -830,8 +865,9 @@ class Stream(Closable, Generic[X]):
     def all(self, predicate: Filter[X] = identity) -> bool:
         """
         This operation is one of the terminal operations
-        returns True if all elements returns True. If there are no element in stream,
-        returns True.
+        returns True if all elements returns True.
+
+        Note that, if there is no element in stream then returns True.
 
         Example:
             class Student:
@@ -858,7 +894,8 @@ class Stream(Closable, Generic[X]):
         """
         This operation is one of the terminal operations
         Returns True if at-least one element are True according to given predicate.
-        Consequently, empty Stream returns False.
+
+        Note that if there is no element in the stream then returns False.
 
         Example:
             class Student:
@@ -885,7 +922,9 @@ class Stream(Closable, Generic[X]):
         """
         This operation is one of the terminal operations
         returns True if no element are true according to predicate.
-        Empty stream returns True.
+
+        Note that if there is no element in the stream then returns True.
+
         Example:
             class Student:
                 def __init__(self, name, age):
@@ -934,6 +973,7 @@ class Stream(Closable, Generic[X]):
         """
         This operation is one of the terminal operations
         consumes each element from stream.
+
         Example:
             stream = Stream(range(5))
             stream.for_each(print)
@@ -957,8 +997,11 @@ class Stream(Closable, Generic[X]):
         This operation is one of the terminal operations
         reduces stream element to produce an element.
 
-        stream = Stream(range(1,6))
-        stream.reduce(lambda x,y: x*y, 1) -> 120 (5!)
+        Example:
+            import operator as op
+
+            stream = Stream(range(1,6))
+            stream.reduce(op.mul, 1).get() -> 120 (factorial 5)
 
         Case Without initial point(initial__pointer is NIL):
             Return value can only be EMPTY iff Stream does not having
@@ -980,8 +1023,8 @@ class Stream(Closable, Generic[X]):
             Stream([1]).reduce(SUMMING, initial_point) -> Optional[11]
             Stream([1, 2]).reduce(SUMMING, initial_point) -> Optional[13]
 
-        :param initial_point:
-        :param bi_func:
+        :param initial_point: defaults to NIL
+        :param bi_func: reduction function
         :return:
         """
 
@@ -998,21 +1041,21 @@ class Stream(Closable, Generic[X]):
     def done(self):
         """
         This operation is one of the terminal operations.
-        This can be used in case we are only interested in processing
-        of elements.
 
-        # TODO: add example
-        :return:
+        This can be used in case we are only interested in processing
+        intermediate elements.
+
         """
 
-        for _ in self._pointer: pass
+        for _ in self._pointer:
+            pass
 
     @close_pipeline
     @check_pipeline
     def __iter__(self) -> Iterable[X]:
         """
         This operation is one of the terminal operations
-
+        
         Example:
             for i in Stream(range(5)):
                 print(i)

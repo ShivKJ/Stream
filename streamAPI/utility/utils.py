@@ -1,7 +1,7 @@
 import json
 from csv import DictReader, reader as ListReader
 from datetime import date, datetime, timedelta
-from functools import partial, wraps
+from functools import partial, singledispatch, wraps
 from inspect import FullArgSpec, getfullargspec
 from logging import getLogger
 from operator import itemgetter
@@ -45,6 +45,7 @@ def execution_time(logger_name: str = None, prefix: str = None):
         :param m:
         :return:
         """
+
         if prefix is not None:
             m = prefix + ' : ' + m
 
@@ -57,6 +58,7 @@ def execution_time(logger_name: str = None, prefix: str = None):
         :param func:
         :return: wrapping function
         """
+
         logger = getLogger(logger_name)
 
         @wraps(func)
@@ -125,14 +127,14 @@ def constructor_setter(throw_var_args_exception=True):
         obj_dict = {}
 
         if ins.defaults is not None:
-            '''
+            """
             def foo(a, b, p=1, q=2, *, r):pass
             
             ins.defaults is tuple (1,2)
             To get names, we use ins.args that is (a,b,p,q) here.
             
             Note that, values of p and q will be updated from kwargs if present in it.  
-            '''
+            """
 
             key_args_names = ins.args[-len(ins.defaults):]  # picking names of default keys
             obj_dict.update(zip(key_args_names, ins.defaults))
@@ -140,22 +142,22 @@ def constructor_setter(throw_var_args_exception=True):
         if ins.kwonlydefaults is not None:
             # when key_only args which comes after '*' in function definition.
             # It is not None which means they have default values
-            '''
+            """
             def foo(a, b, p=1, *, q=2, r):pass
             
             ins.kwonlydefaults is dictionary dict(q=2).
             
-            '''
+            """
             obj_dict.update(ins.kwonlydefaults)
 
         obj_dict.update(**kwargs)
-        '''
+        """
         Now checking if kwonlyargs have been initialized.
         
         def foo(a, b, p=1, *, q=2, r):pass
         here kwonlyargs is [q, r].
         Note that we have already populated 'q' in dictionary obj_dict using ins.kwonlydefaults.
-        '''
+        """
 
         for k in ins.kwonlyargs:
             if k not in obj_dict:
@@ -184,9 +186,9 @@ def constructor_setter(throw_var_args_exception=True):
 class DB:
     """
     This class provide functionality to create connection object.
-    This is helpful in case mulitple object is to made for same credential
+    This is helpful in case multiple object is to made for same credential
 
-    The underline database used is Postgresql
+    The underline database used is postgreSQL.
     """
 
     def __init__(self, *, dbname: str,
@@ -220,18 +222,26 @@ class DB:
 # -----------------------------------------------------
 
 
-def filter_transform(data_stream: Iterable[T],
+def filter_transform(itr: Iterable[T],
                      condition: Filter[T],
                      transform: Function[T, X]) -> Iterable[X]:
     """
-    given a list filters elements and transform filtered element
-    :param data_stream:
-    :param condition:
-    :param transform:
-    :return:
+    given a iterator filters elements using "condition" and transform filtered element using "transform".
+
+    Example:
+        for e in filter_transform(range(10),lambda x:x%2==0,lambda x:x**2):
+            print(e,end=' ')
+
+        prints: 0 4 16 36 64
+
+    :param itr: data source
+    :param condition: filtering condition.
+    :param transform: maps filtered elements.
+
+    :return: iterator made from first filtering and then transforming filtered elements.
     """
 
-    return map(transform, filter(condition, data_stream))
+    return map(transform, filter(condition, itr))
 
 
 def always_true(f) -> bool:
@@ -248,6 +258,7 @@ def _files_inside_dir(dir_name: str,
     """
     recursively finds all files inside dir and in its subdir recursively.
     Each out file name will have complete path
+
     :param dir_name: top level dir
     :param match: criteria to select file
     :param append_full_path: if full path is to be given as output
@@ -267,7 +278,8 @@ def files_inside_dir(dir_name: str,
                      as_type: Callable[[PathGenerator], T] = list,
                      append_full_path=True) -> T:
     """
-    recursively finds all files inside dir and in its subdir recursively
+    recursively finds all files inside dir and in its subdir recursively.
+
     :param dir_name: top level dir
     :param match: criteria to select file
     :param as_type: if None then returns files as Iterator.
@@ -282,18 +294,26 @@ def files_inside_dir(dir_name: str,
 
 def get_file_name(file_name: str, at: int = -1, split: str = '/') -> str:
     """
-    Extracts fileName from a file
+    Extracts fileName from a file.
+
+    Example:
+        get_file_name('/a/b/file_dir/my_file.csv') -> 'my_file'
+        get_file_name('/a/b/file_dir/my_file.csv',at=-2) -> 'file_dir'
+
     :param file_name:
     :param at: fetch name after splitting files on "split"
     :param split:
+
     :return:
     """
+
     return file_name.split(split)[at].split('.')[0]
 
 
 def json_load(file: str):
     """
     loads json file.
+
     :param file:
     :return: loaded json file as dict/list
     """
@@ -313,6 +333,7 @@ def json_dump(obj, file: str, indent: int = None, default_cast=None,
     :param sort_keys:
     :param cls:
     """
+
     with open(file, 'w') as f:
         json.dump(obj, f, indent=indent,
                   default=default_cast, sort_keys=sort_keys,
@@ -338,34 +359,51 @@ csv_ListReader: Function[str, Iterable[List[str]]] = partial(csv_itr, as_dict=Fa
 # -----------------------------------------------------
 
 
+@singledispatch
 def as_date(date_: DateTime) -> date:
     """
-    cast date_ to date object.
-    date string must be in format : YYYY-MM-DD
+    create date object from given "date_". If "date_" is of type string, then
+    it must to of type "YYYY-MM-DD".
 
     :param date_:
-    :return: date object from "date_"
+    :return: date object made from "date_"
     """
-    if isinstance(date_, str):
-        date_ = parse(date_)
 
-    if isinstance(date_, datetime):
-        date_ = date_.date()
+    raise ValueError('input is of type: {}; '
+                     'which is undefined.'.format(type(date_)))
 
-    assert isinstance(date_, date)
 
-    return date_
+@as_date.register(str)
+def _(date_): return parse(date_).date()
+
+
+@as_date.register(datetime)
+def _(date_): return date_.date()
+
+
+@as_date.register(date)
+def _(date_): return date_
 
 
 def date_generator(start_date: DateTime, end_date: DateTime,
                    include_end: bool = True, interval: int = 1) -> Iterable[date]:
     """
-    generates dates between start and end date
+    generates dates between start and end date.
+
+    Example:
+        for date_ in date_generator('2017-01-01','2017-01-10',include_end=False,interval=3):
+            print(date_,end=' ')
+        prints: 2017-01-01 2017-01-04 2017-01-07
+
+        for date_ in date_generator('2017-01-01','2017-01-10',include_end=True,interval=3):
+            print(date_,end=' ')
+        prints: 2017-01-01 2017-01-04 2017-01-07 2017-01-10
+
     :param start_date:
     :param end_date:
-    :param include_end:
-    :param interval:
-    :return:
+    :param include_end: defaults to True
+    :param interval: defaults to 1
+    :return: generator of date using given arguments.
     """
 
     start_date = as_date(start_date)
