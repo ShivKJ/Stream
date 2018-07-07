@@ -244,12 +244,12 @@ def filter_transform(itr: Iterable[T],
     return map(transform, filter(condition, itr))
 
 
-def always_true(f) -> bool:
+def always_true(e) -> bool:
     return True
 
 
-def identity(f: T) -> T:
-    return f
+def identity(e: T) -> T:
+    return e
 
 
 def _files_inside_dir(dir_name: str,
