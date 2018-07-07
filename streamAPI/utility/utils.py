@@ -9,10 +9,6 @@ from os import walk
 from os.path import abspath, join
 from typing import Callable, Dict, Iterable, List, Tuple, Union
 
-from dateutil.parser import parse
-from psycopg2 import connect
-from psycopg2.extensions import connection
-from psycopg2.extras import DictConnection
 from time import time
 
 from streamAPI.utility.Types import DateTime, Filter, Function, PathGenerator, T, X, Y
@@ -201,11 +197,15 @@ class DB:
         self.port = port
 
     @property
-    def dict_conn(self) -> connection:
+    def dict_conn(self):
+        from psycopg2 import connect
+        from psycopg2.extras import DictConnection
+
         return connect(**self.__dict__, connection_factory=DictConnection)
 
     @property
-    def conn(self) -> connection:
+    def conn(self):
+        from psycopg2 import connect
         return connect(**self.__dict__)
 
     @property
@@ -374,7 +374,10 @@ def as_date(date_: DateTime) -> date:
 
 
 @as_date.register(str)
-def _(date_): return parse(date_).date()
+def _(date_):
+    from dateutil.parser import parse
+
+    return parse(date_).date()
 
 
 @as_date.register(datetime)
