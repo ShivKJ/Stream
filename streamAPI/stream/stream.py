@@ -554,28 +554,70 @@ class Stream(Closable, Generic[X]):
         return self
 
     @check_pipeline
-    def window_function(self, func, n: int) -> 'Stream[X]':
+    def window_function(self, func, n: Union[int, None]) -> 'Stream[X]':
         """
-        Applies function "func" on "n" elements of stream.
+        If "n" is not None (then it has to be an integer) then invoking function
+        "func" on 'tuple' of "n" elements of stream. 'tuple' is made using past
+        n-1 elements and 1 current element.
 
-        Example: Moving average for window size 3
+        If "n" is None, then all past values up to current value, held by a 'list',
+        will be sent to function "func". Note that data type 'list', a mutable object,
+        is chosen to make process more memory efficient. Any change made in the 'list'
+        inside "func" will be visible to in future call to "func".(a 'list' is
+        mutated via 'append','clean','extend','insert','pop','remove', 'reverse',
+        'sort' methods.) Each call to "func" will be sent the same list appended
+        with current element.
+
+        Example1: Moving average for window size 3
             def mean(l): return sum(l)/len(l)
 
             Stream([1,6,2,7,3]).window_function(mean , 3).as_seq()
             -> [3.0, 5.0, 4.0]
 
+        Example2: Averaging all past values:
+            def mean(l): return sum(l)/len(l)
 
-        :param func: takes input, at any instant, as a tuple having
-               earlier "n-1" elements appended with current element.
-        :param n: natural number
+            Stream(range(1,5)).window_function(mean , None).as_seq()
+            -> [1.0, 1.5, 2.0, 2.5]
+
+        :param func: if "n" is not None then, takes input, at any instant,
+                     as a 'tuple' having past "n-1" elements appended with
+                     current element.
+
+                     If "n" is None, the all past values in a list appended
+                     with current element.
+        :param n: natural number or None
         :return:
         """
 
-        self._pointer = map(func, self._fetch_next(self._pointer, n))
+        if n is None:
+            itr = Stream._all_past_values(self._pointer)
+        else:
+            itr = Stream._fetch_next(self._pointer, n)
+
+        self._pointer = map(func, itr)
         return self
 
     @staticmethod
-    def _fetch_next(itr, n) -> Tuple[X, ...]:
+    def _all_past_values(itr: Iterable[X]) -> Iterable[list]:
+        """
+        Creates a generator.
+
+        Generator always returns same list but each time an element from 'itr'
+        is appended to the list.
+
+        :param itr:
+        :return:
+        """
+
+        data_holder = []
+
+        for e in itr:
+            data_holder.append(e)
+            yield data_holder
+
+    @staticmethod
+    def _fetch_next(itr: Iterable[X], n: int) -> Iterable[Tuple[X, ...]]:
         """
         Creates generator. Each element is tuple of size "n".
 
@@ -713,7 +755,9 @@ class Stream(Closable, Generic[X]):
         """
         This operation is one of the terminal operations
 
-        Grouping by stream elements using "group_by" function and hence creating "buckets".
+        Grouping by stream elements using "group_by" function and hence creating "buckets". Note
+        that dictionary data type will be used to create mapping of bucket to corresponding
+        elements so output of "group_by" must be hashable.
 
         Element will be transformed using "value_mapper" before putting in corresponding "bucket".
 

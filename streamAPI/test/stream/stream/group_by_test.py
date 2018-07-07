@@ -124,7 +124,7 @@ class GroupByTest(TestCase):
     def test_7(self):
         def mod_10(e): return e % 10
 
-        self.assertDictEqual(Stream([]).group_by(mod_10), dict())
+        self.assertDictEqual(Stream(()).group_by(mod_10), dict())
 
 
 if __name__ == '__main__':

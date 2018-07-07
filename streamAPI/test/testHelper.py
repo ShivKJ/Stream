@@ -19,6 +19,9 @@ class RND(Random):
     def int_range(self, a, b, step=1, *, size) -> list:
         return [self.randrange(a, b, step) for _ in range(size)]
 
+    def float_range(self, a, b, size) -> list:
+        return [self.uniform(a, b) for _ in range(size)]
+
     def int_range_supplier(self, a, b, step=1) -> Supplier:
         return Supplier(lambda: self.randrange(a, b, step))
 
