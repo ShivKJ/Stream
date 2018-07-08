@@ -1,9 +1,10 @@
+7
 from decimal import Context, Decimal as D
 from statistics import mean, pstdev
 from typing import List
 from unittest import TestCase, expectedFailure, main
 
-from streamAPI.stream import Stream
+from streamAPI.stream import Stream, ToList
 from streamAPI.test.testHelper import random
 
 
@@ -18,7 +19,7 @@ class MyTestCase(TestCase):
 
         window_size = 4
 
-        out = Stream(data).window_function(mean, window_size).as_seq()
+        out = Stream(data).window_function(mean, window_size).collect(ToList())
 
         out_target = []
 
@@ -48,7 +49,7 @@ class MyTestCase(TestCase):
         def mean(l):
             return sum(l) / len(l)
 
-        out = Stream(data).window_function(mean, None).as_seq()
+        out = Stream(data).window_function(mean, None).collect(ToList())
 
         val = data[0]
         eps = 1e-8
@@ -90,7 +91,7 @@ class MyTestCase(TestCase):
 
         stat = Statistic()
 
-        out: List[dict] = Stream(data).window_function(stat, None).as_seq()
+        out: List[dict] = Stream(data).window_function(stat, None).collect(ToList())
 
         eps = 1e-9
 
@@ -143,7 +144,7 @@ class MyTestCase(TestCase):
         wa = WeightedAverage(weight)
 
         # -------------------------------------------------------------------
-        out = Stream(data).window_function(wa, window_size).as_seq()
+        out = Stream(data).window_function(wa, window_size).collect(ToList())
         # -------------------------------------------------------------------
 
         chunk = data[:window_size]

@@ -9,64 +9,6 @@ from streamAPI.utility.Types import Filter, Function, X
 from streamAPI.utility.utils import always_true, get_functions_clazz
 
 
-class GroupByBucketType(type):
-    """
-    In group_by method of Stream class, we may want to
-    used customised container type for value holding.
-
-    For example:
-        Stream([1, 2, 5, 1, 3, 4, 2]).group_by(lambda x:x%2)
-        -> {1: [1, 5, 1, 3], 0: [2, 4, 2]}
-
-        Here value container class is List.
-
-        If we want value container class to be Set
-        Stream([1, 2, 5, 1, 3, 4, 2]).group_by(lambda x: x % 2, bucket_type=SetType)
-        -> {1: {1, 3, 5}, 0: {2, 4}}
-
-    By default, "bucket_type" will be of Type List. In case we want it be of
-    specific type, then the class has to implement "add" method. This can be fulfilled by
-    making GroupByValueType class as a meta class.
-
-    Here we implement two Class ListType and SetType.
-    """
-
-    def __new__(meta, name, bases, class_dict):
-        return type.__new__(meta, name, bases, class_dict)
-
-    @abstractmethod
-    def add(self, o):
-        pass
-
-
-class ListType(list, metaclass=GroupByBucketType):
-    """
-    This is the default choice of class type for "bucket",
-    in "group_by" method of Stream.
-
-    Stream([1,2,5,1,3,4,2]).group_by(lambda x : x % 2, bucket_type=ListType)
-    -> {1: [1, 5, 1, 3], 0: [2, 4, 2]}
-    """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    def add(self, o):
-        return self.append(o)
-
-
-class SetType(set, metaclass=GroupByBucketType):
-    """
-    Stream([1,2,5,1,3,4,2]).group_by(lambda x:x%2,bucket_type=SetType)
-    -> {1: {1, 3, 5}, 0: {2, 4}}
-    """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    add = set.add
-
-
 class Supplier(Iterable[X]):
     """
     This class provide a wrapper around a callable function.

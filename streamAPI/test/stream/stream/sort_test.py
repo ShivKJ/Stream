@@ -1,7 +1,7 @@
 from functools import total_ordering
 from unittest import TestCase, main
 
-from streamAPI.stream.stream import Stream
+from streamAPI.stream import Stream, ToList
 from streamAPI.test.testHelper import random
 
 
@@ -17,7 +17,7 @@ class SortTest(TestCase):
                .limit(size)
                .map(square)
                .sort()
-               .as_seq())
+               .collect(ToList()))
 
         rnd.reset()
 
@@ -38,7 +38,7 @@ class SortTest(TestCase):
                .limit(size)
                .map(square)
                .sort(reverse=True)
-               .as_seq())
+               .collect(ToList()))
 
         rnd.reset()
 
@@ -68,7 +68,7 @@ class SortTest(TestCase):
                .limit(size)
                .map(Data)
                .sort(reverse=True)
-               .as_seq())
+               .collect(ToList()))
 
         rnd.reset()
 
@@ -98,7 +98,7 @@ class SortTest(TestCase):
                .limit(size)
                .map(Data)
                .sort(comp=Data.e, reverse=True)
-               .as_seq())
+               .collect(ToList()))
 
         rnd.reset()
 

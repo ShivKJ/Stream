@@ -1,7 +1,9 @@
 from collections import Counter, defaultdict
+from operator import attrgetter
 from unittest import TestCase, main
 
-from streamAPI.stream import ListType, SetType, Stream
+from streamAPI.stream import (CollectAndThen, Counting, GroupingBy, Mapping, Stream, Summing,
+                              ToList, ToSet)
 from streamAPI.test.testHelper import random
 from streamAPI.utility import identity
 
@@ -14,7 +16,20 @@ class GroupByTest(TestCase):
         size = 1000
 
         data = rnd.int_range(start, end, size=size)
-        element_count = Stream(data).group_by(identity, collect_and_then=len)
+        element_count = Stream(data).collect(GroupingBy(identity,
+                                                        CollectAndThen(ToList(), len)))
+
+        out_target = Counter(data)
+        self.assertDictEqual(element_count, out_target)
+
+    def test_1a(self):
+        rnd = random()
+
+        start, end = 1, 100
+        size = 1000
+
+        data = rnd.int_range(start, end, size=size)
+        element_count = Stream(data).collect(GroupingBy(identity, Counting()))
 
         out_target = Counter(data)
         self.assertDictEqual(element_count, out_target)
@@ -29,7 +44,7 @@ class GroupByTest(TestCase):
 
         data = rnd.int_range(start, end, size=size)
 
-        distinct_elements = Stream(data).group_by(mod_10, bucket_type=SetType)
+        distinct_elements = Stream(data).collect(GroupingBy(mod_10, ToSet()))
 
         out_target = defaultdict(set)
 
@@ -48,7 +63,7 @@ class GroupByTest(TestCase):
 
         data = rnd.int_range(start, end, size=size)
 
-        out = Stream(data).group_by(mod_10, bucket_type=ListType)
+        out = Stream(data).collect(GroupingBy(mod_10, ToList()))
 
         out_target = defaultdict(list)
 
@@ -67,7 +82,7 @@ class GroupByTest(TestCase):
 
         data = rnd.int_range(start, end, size=size)
 
-        out = Stream(data).group_by(mod_10, bucket_type=ListType, collect_and_then=sum)
+        out = Stream(data).collect(GroupingBy(mod_10, Summing()))
 
         out_target = defaultdict(int)
 
@@ -88,8 +103,7 @@ class GroupByTest(TestCase):
 
         data = rnd.int_range(start, end, size=size)
 
-        out = Stream(data).group_by(mod_10, square,
-                                    bucket_type=ListType, collect_and_then=sum)
+        out = Stream(data).collect(GroupingBy(mod_10, Mapping(square, Summing())))
 
         out_target = defaultdict(int)
 
@@ -108,9 +122,8 @@ class GroupByTest(TestCase):
 
         data = rnd.int_range(start, end, size=size)
 
-        element_distinct_count = Stream(data).group_by(mod_100,
-                                                       bucket_type=SetType,
-                                                       collect_and_then=len)
+        element_distinct_count = Stream(data).collect(GroupingBy(mod_100,
+                                                                 CollectAndThen(ToSet(), len)))
 
         temp = defaultdict(set)
 
@@ -124,7 +137,40 @@ class GroupByTest(TestCase):
     def test_7(self):
         def mod_10(e): return e % 10
 
-        self.assertDictEqual(Stream(()).group_by(mod_10), dict())
+        self.assertDictEqual(Stream(()).collect(GroupingBy(mod_10)), dict())
+
+    def test_8(self):
+        rnd = random()
+        data_size = 1000
+        countries = tuple('ABC')
+        sex = ('M', 'F')
+
+        class Person:
+            def __init__(self, country, state, age, sex):
+                self.country = country
+                self.state = state
+                self.age = age
+                self.sex = sex  # male or female
+
+        ps = [Person(rnd.choice(countries), rnd.randrange(1, 4), rnd.randrange(0, 60), rnd.choice(sex))
+              for _ in range(data_size)]
+
+        collector = GroupingBy(attrgetter('country'),
+                               GroupingBy(attrgetter('state'),
+                                          GroupingBy(attrgetter('sex'),
+                                                     Counting())))
+
+        flt = lambda x: 20 <= x.age <= 50
+
+        out = Stream(ps).filter(flt).collect(collector)
+
+        out_target = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
+
+        for p in ps:
+            if flt(p):
+                out_target[p.country][p.state][p.sex] += 1
+
+        self.assertDictEqual(out, out_target)
 
 
 if __name__ == '__main__':

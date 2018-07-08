@@ -2,7 +2,7 @@ import operator as op
 from functools import reduce
 from unittest import TestCase, main
 
-from streamAPI.stream.stream import Stream
+from streamAPI.stream import Stream, ToList
 from streamAPI.stream.streamHelper import ChainedCondition
 from streamAPI.test.testHelper import random
 
@@ -25,7 +25,7 @@ class Map(TestCase):
                .limit(size)
                .map(add_5)
                .map(pow_3)
-               .as_seq())
+               .collect(ToList()))
 
         rnd.reset()
 
@@ -51,7 +51,7 @@ class Map(TestCase):
                .filter(mod_2_not_zero)
                .map(pow_3)
                .filter(mod_5_not_4)
-               .as_seq())
+               .collect(ToList()))
 
         rnd.reset()
 
@@ -94,7 +94,7 @@ class Map(TestCase):
         out = Stream(rnd.int_range_supplier(a, b)) \
             .limit(size) \
             .map(pow_2) \
-            .reduce(op.add, 0) \
+            .reduce(0, bi_func=op.add) \
             .get()
 
         rnd.reset()
@@ -109,7 +109,7 @@ class Map(TestCase):
 
         out = Stream(rnd.int_range_supplier(a, b)) \
             .limit(size) \
-            .reduce(op.mul, 1) \
+            .reduce(1, bi_func=op.mul) \
             .get()
 
         rnd.reset()
@@ -129,7 +129,7 @@ class Map(TestCase):
         out = Stream(rnd.int_range_supplier(a, b)) \
             .limit(size) \
             .conditional(cc) \
-            .reduce(op.mul, 1) \
+            .reduce(1, bi_func=op.mul) \
             .get()
 
         rnd.reset()
@@ -149,7 +149,7 @@ class Map(TestCase):
         out = Stream(rnd.int_range_supplier(a, b)) \
             .limit(size) \
             .conditional(cc) \
-            .reduce(op.mul, 1) \
+            .reduce(1, bi_func=op.mul) \
             .get()
 
         rnd.reset()
@@ -170,7 +170,7 @@ class Map(TestCase):
                .limit(size)
                .zip(rng)
                .map(sum)
-               .reduce(op.mul, 1)
+               .reduce(1, bi_func=op.mul)
                .get())
 
         rnd.reset()

@@ -1,13 +1,12 @@
 from functools import reduce, wraps
 from itertools import accumulate, chain, cycle, dropwhile, islice, takewhile, zip_longest
-from typing import Any, Dict, Generic, Iterable, Sequence, Tuple, Union
+from typing import Any, Generic, Iterable, Tuple, Union
 
 from streamAPI.stream.TerminalOperations import Collector
 from streamAPI.stream.decos import check_pipeline, close_pipeline
 from streamAPI.stream.optional import EMPTY, Optional
-from streamAPI.stream.streamHelper import (ChainedCondition, Closable, GroupByBucketType, ListType,
-                                           Supplier)
-from streamAPI.utility.Types import BiFunction, Callable, Consumer, Filter, Function, T, X, Y, Z
+from streamAPI.stream.streamHelper import ChainedCondition, Closable, Supplier
+from streamAPI.utility.Types import BiFunction, Callable, Consumer, Filter, Function, X, Y
 from streamAPI.utility.utils import NIL, divide_in_chunk, get_chunk, get_functions_clazz, identity
 
 
@@ -24,6 +23,9 @@ class Stream(Closable, Generic[X]):
     Some of the examples are given below.
     
     Example:
+        from streamAPI.stream import *
+        from operator import attrgetter,itemgetter
+
         class Student:
             def __init__(self, name, age, sex):
                 self.name = name
@@ -47,46 +49,67 @@ class Stream(Closable, Generic[X]):
                     Student('F',9,False),
                     Student('G',29,True)]
 
-        Stream(students).filter(lambda x:x.age<20).sort(lambda x:x.age).as_seq()
+        Stream(students).filter(lambda x:x.age<20).sort(lambda x:x.age).collect(ToList())
+
         -> [[name=B,age=8,sex=Male],
             [name=F,age=9,sex=Female],
             [name=A,age=10,sex=Male],
             [name=C,age=11,sex=Female],
             [name=D,age=17,sex=Male]]
 
-        Stream(students).filter(lambda x:x.age<20).group_by(lambda x:x.sex)
+
+        Stream(students).filter(lambda x:x.age<20).collect(GroupingBy(attrgetter('sex')))
+
         -> {True: [[name=A,age=10,sex=Male],
                    [name=B,age=8,sex=Male],
                    [name=D,age=17,sex=Male]],
             False: [[name=C,age=11,sex=Female],
                     [name=F,age=9,sex=Female]]}
 
-        Stream(range(10)).map(lambda x: x**3 - x**2).filter(lambda x: x%3 == 0).distinct().limit(3).as_seq()
-        ->  [0, 294, 648] # distinct can change the stream data ordering.
+        Stream(range(10)).map(lambda x: x**3 - x**2).filter(lambda x: x%3 == 0).skip(3).collect(ToList())
+        ->  [48, 180, 294, 648]
 
-        Stream(range(10)).batch(3).as_seq() -> [(0, 1, 2), (3, 4, 5), (6, 7, 8), (9,)]
+        Stream(range(10)).batch(3).collect(ToList()) -> [(0, 1, 2), (3, 4, 5), (6, 7, 8), (9,)]
 
-        Stream([(0, 1, 2), (3, 4, 5), (6, 7, 8), (9,)]).flat_map().limit(6).as_seq()
+        Stream([(0, 1, 2), (3, 4, 5), (6, 7, 8), (9,)]).flat_map().limit(6).collect(ToList())
         -> [0, 1, 2, 3, 4, 5]
 
-        Stream(range(10)).take_while(lambda x:x<5).as_seq() # similar to while loop
+        Stream(range(10)).take_while(lambda x:x<5).collect(ToList()) # similar to while loop
         -> [0, 1, 2, 3, 4]
 
-        Stream(range(10)).drop_while(lambda x:x<5).as_seq()
+        Stream(range(10)).drop_while(lambda x:x<5).collect(ToList())
         -> [5, 6, 7, 8, 9]
 
-        Stream(range(3,9)).zip(range(4)).as_seq() -> [(3, 0), (4, 1), (5, 2), (6, 3)]
+        Stream(range(3,9)).zip(range(4)).collect(ToList()) -> [(3, 0), (4, 1), (5, 2), (6, 3)]
 
-        Stream(range(3,9)).zip(range(4),after=False).as_seq() -> [(0, 3), (1, 4), (2, 5), (3, 6)]
+        Stream(range(3,9)).zip(range(4),after=False).collect(ToList()) -> [(0, 3), (1, 4), (2, 5), (3, 6)]
 
-        Stream(range(3,9)).zip_longest(range(4),fillvalue=-1).as_seq()
+        Stream(range(3,9)).zip_longest(range(4),fillvalue=-1).collect(ToList())
         -> [(3, 0), (4, 1), (5, 2), (6, 3), (7, -1), (8, -1)]
 
-        Stream(range(3,9)).zip_longest(range(4),after=False,fillvalue=-1).as_seq()
+        Stream(range(3,9)).zip_longest(range(4),after=False,fillvalue=-1).collect(ToList())
         -> [(0, 3), (1, 4), (2, 5), (3, 6), (-1, 7), (-1, 8)]
 
-        Stream(range(10)).map(lambda x:x**2).reduce(lambda x,y:x+y) # sum of squares
+        Stream(range(10)).map(lambda x:x**2).reduce(bi_func=op.add) # sum of squares
         -> Optional[285]
+
+        Stream(['AB', 'BD', 'AC', 'DE', 'BD', 'BW', 'AB']).collect(GroupingBy(itemgetter(0),
+                                                                      GroupingBy(itemgetter(1),
+                                                                                 Counting())))
+
+        -> {
+             "A": {
+              "B": 2,
+              "C": 1
+             },
+             "B": {
+              "D": 2,
+              "W": 1
+             },
+             "D": {
+              "E": 1
+             }
+            }
 
     """
 
@@ -746,166 +769,9 @@ class Stream(Closable, Generic[X]):
 
     @close_pipeline
     @check_pipeline
-    def group_by(self, group_by, value_mapper: Function[X, Y] = identity,
-                 collect_and_then=None,
-                 bucket_type: GroupByBucketType = ListType) -> Dict[Any, Sequence[Y]]:
-        """
-        This operation is one of the terminal operations
-
-        Grouping by stream elements using "group_by" function and hence creating "buckets". Note
-        that dictionary data type will be used to create mapping of bucket to corresponding
-        elements so output of "group_by" must be hashable.
-
-        Element will be transformed using "value_mapper" before putting in corresponding "bucket".
-
-        "collect_and_then" is a function which takes in input as all elements in a "bucket"
-        and returns desired output which will be set to corresponding bucket's value.
-
-        "bucket_type" defines type of "bucket". It can be of type ListType or SetType. User
-        can specify their custom type by making class's meta-class to be "GroupByBucketType"
-        (See streamHelper module).
-
-        Example1:
-            stream  = Stream(range(10))
-            stream.group_by(group_by=lambda x: x%3) -> {0:[0, 3, 6, 9], 1:[1, 4, 7], 2:[2, 5, 8]}
-
-        Example2:
-            stream  = Stream(range(10))
-            stream.group_by(group_by=lambda x: x%3,value_mapper=lambda x: x**2)
-            -> {0:[0, 9, 36, 81], 1:[1, 16, 49], 2:[4, 25, 64]}
-
-        Example3:
-            out = Stream([1, 2, 3, 4, 2, 4]).group_by(lambda x:x%2,bucket_type=ListType)
-            -> {1: [1, 3], 0: [2, 4, 2, 4]}
-
-            out =Stream([1, 2, 3, 4, 2, 4]).group_by(lambda x:x%2,bucket_type=SetType)
-            -> {1: {1, 3}, 0: {2, 4}}
-
-        Example4:
-            Stream(range(9)).group_by(lambda x:x%2,collect_and_then=len) -> {0: 5, 1: 4}
-
-        :param group_by:
-        :param value_mapper:
-        :param collect_and_then:
-        :param bucket_type:
-        :return:
-        """
-
-        out = {}
-
-        for elem in self._pointer:
-            Stream._update(out, group_by(elem), value_mapper(elem), bucket_type)
-
-        if collect_and_then is not None:
-            for k, v in out.items():
-                out[k] = collect_and_then(v)
-
-        return out
-
-    @staticmethod
-    def _update(buckets: dict, bucket, e, bucket_class: GroupByBucketType):
-        """
-        Updates "buckets" (that is the mapping from bucket to data points in the bucket)
-        using given "bucket" and element "e" to be put in bucket.
-
-        In case "bucket" does not exists then a new bucket is created using "bucket_class".
-
-        :param buckets:
-        :param bucket:
-        :param e:
-        :param bucket_class:
-        :return:
-        """
-
-        if bucket not in buckets:
-            pts = bucket_class()
-            buckets[bucket] = pts
-        else:
-            pts = buckets[bucket]
-
-        pts.add(e)
-
-    @close_pipeline
-    @check_pipeline
-    def mapping(self, key_mapper: Function[X, T],
-                value_mapper: Function[X, Y] = identity,
-                resolve: BiFunction[Y, Y, Z] = None) -> Dict[T, Union[Y, Z]]:
-        """
-        This operation is one of the terminal operations
-        creates a mapping from stream element using "key_mapper" and "value_mapper".
-
-        Example:
-            class Student:
-                def __init__(self, name, id):
-                    self.name = name
-                    self.id  = id
-
-            students = Stream([Student('a',1),Student('b',2),Student('a', 3)])
-            students.mapping(key_mapper=lambda x:x.id, value_mapper=lambda x:x.name)
-            -> {1: 'a', 2:'b', 3:'c'}
-
-        Notice that elements after operated upon by function "key_mapper" must be
-        unique. In case of duplicity, ValueError is thrown.
-
-        for example:
-            out = Stream([1,2,1,3]).mapping(lambda x:x, lambda x:x**2)
-
-        will throw ValueError as a value (1) is present multiple times.
-
-        In case we need to resolve such issues we can pass a function which
-        will take oldValue and newValue and return a value which will be set
-        for the key.
-
-        import operator as op
-
-        out = Stream([1,2,3,4,5,6]).mapping(lambda x: x%2 ,lambda x:x, op.add)
-        print (out) # prints {0:12, 1: 9}
-
-        :param key_mapper:
-        :param value_mapper: defaults to identity
-        :param resolve
-        :return:
-        """
-
-        out = {}
-
-        for elem in self._pointer:
-            k = key_mapper(elem)
-
-            if k in out:
-                if resolve is None:
-                    raise ValueError('key {} is already present in map'.format(k))
-                out[k] = resolve(out[k], value_mapper(elem))
-            else:
-                out[k] = value_mapper(elem)
-
-        return out
-
-    @close_pipeline
-    @check_pipeline
-    def as_seq(self, seq_clazz: Callable[[Iterable[X], None], Y] = list, **kwargs) -> Y:
-        """
-        This operation is one of the terminal operations
-        returns Stream elements as sequence, for example as list.
-
-        Example:
-            Stream(range(5)).as_seq() -> [1, 2, 3, 4, 5]
-
-            from numpy import fromiter
-            Stream(range(5)).as_seq(fromiter, dtype=int) -> array([0, 1, 2, 3, 4])
-
-        :param seq_clazz:
-        :param kwargs
-        :return:
-        """
-
-        return seq_clazz(self._pointer, **kwargs)
-
-    @close_pipeline
-    @check_pipeline
     def all(self, predicate: Filter[X] = identity) -> bool:
         """
-        This operation is one of the terminal operations
+        This operation is one of the terminal operations.
         returns True if all elements returns True.
 
         Note that, if there is no element in stream then returns True.
@@ -916,8 +782,8 @@ class Stream(Closable, Generic[X]):
                     self.name = name
                     self.age  = age
 
-            stream = Stream([Student('a',10), Student('b',12)])
-            stream.all(predicate=lambda x:x.age < 15) -> True
+            Stream([Student('a',10), Student('b',12)]).all(predicate=lambda x:x.age < 15)
+            -> True
 
             Stream([]).all() -> True # Empty Stream returns True
             Stream([0]).all() -> False
@@ -1033,7 +899,7 @@ class Stream(Closable, Generic[X]):
 
     @close_pipeline
     @check_pipeline
-    def reduce(self, bi_func: BiFunction[X, X, Y], initial_point: X = NIL) -> Optional[Y]:
+    def reduce(self, initial_point: X = NIL, *, bi_func: BiFunction[X, X, Y]) -> Optional[Y]:
         """
         This operation is one of the terminal operations
         reduces stream element to produce an element.
@@ -1041,28 +907,23 @@ class Stream(Closable, Generic[X]):
         Example:
             import operator as op
 
-            stream = Stream(range(1,6))
-            stream.reduce(op.mul, 1).get() -> 120 (factorial 5)
+            Stream(range(1,6)).reduce(1,bi_func=op.mul).get() -> 120 (factorial 5)
 
         Case Without initial point(initial__pointer is NIL):
             Return value can only be EMPTY iff Stream does not having
             any element left in it.
 
-            SUMMING = lambda x,y : x + y
-
-            Stream([]).reduce(SUMMING) -> EMPTY
-            Stream([1]).reduce(SUMMING) -> Optional[1]
-            Stream([1, 2]).reduce(SUMMING) -> Optional[3]
+            Stream([]).reduce(bi_func=op.add) -> EMPTY
+            Stream([1]).reduce(bi_func=op.add) -> Optional[1]
+            Stream([1, 2]).reduce(bi_func=op.add) -> Optional[3]
 
         Case With Initial Point (initial_point is not NIL):
             Return value will never be EMPTY.
-
-            SUMMING = lambda x,y : x + y
             initial_point = 10
 
-            Stream([]).reduce(SUMMING, initial_point) -> Optional[10]
-            Stream([1]).reduce(SUMMING, initial_point) -> Optional[11]
-            Stream([1, 2]).reduce(SUMMING, initial_point) -> Optional[13]
+            Stream([]).reduce(initial_point,bi_func=op.add) -> Optional[10]
+            Stream([1]).reduce(initial_point,bi_func=op.add) -> Optional[11]
+            Stream([1, 2]).reduce(initial_point,bi_func=op.add) -> Optional[13]
 
         :param initial_point: defaults to NIL
         :param bi_func: reduction function
@@ -1094,6 +955,13 @@ class Stream(Closable, Generic[X]):
     @close_pipeline
     @check_pipeline
     def collect(self, collector: Collector):
+        """
+        This operation is one of the terminal operations.
+
+        :param collector:
+        :return:
+        """
+
         for e in self._pointer:
             collector.consume(e)
 

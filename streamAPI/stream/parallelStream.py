@@ -210,16 +210,14 @@ class ParallelStream(Exec[T]):
     count = Exec._stop_all_jobs(Stream.count)
     min = Exec._stop_all_jobs(Stream.min)
     max = Exec._stop_all_jobs(Stream.max)
-    group_by = Exec._stop_all_jobs(Stream.group_by)
-    mapping = Exec._stop_all_jobs(Stream.mapping)
-    as_seq = Exec._stop_all_jobs(Stream.as_seq)
     all = Exec._stop_all_jobs(Stream.all)
     any = Exec._stop_all_jobs(Stream.any)
     none_match = Exec._stop_all_jobs(Stream.none_match)
     find_first = Exec._stop_all_jobs(Stream.find_first)
     reduce = Exec._stop_all_jobs(Stream.reduce)
-    done = Exec._stop_all_jobs(Stream.done)
     for_each = Exec._stop_all_jobs(Stream.for_each)
+    done = Exec._stop_all_jobs(Stream.done)
+    collect = Exec._stop_all_jobs(Stream.collect)
     __iter__ = Exec._stop_all_jobs(Stream.__iter__)
 
     @Exec._stop_all_jobs

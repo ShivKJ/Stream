@@ -2,13 +2,13 @@ import operator as op
 from itertools import accumulate
 from unittest import TestCase, main
 
-from streamAPI.stream.stream import Stream
+from streamAPI.stream import Stream, ToList
 
 
 class AccumulateTest(TestCase):
     def test_accumulate1(self):
         data = range(10)
-        out = Stream(data).accumulate(op.add).as_seq()
+        out = Stream(data).accumulate(op.add).collect(ToList())
 
         out_target = list(accumulate(data, op.add))
         self.assertListEqual(out, out_target)
@@ -33,7 +33,7 @@ class AccumulateTest(TestCase):
 
         data = range(size)
 
-        out = Stream(data).accumulate(op.add).reduce(op.add).get()
+        out = Stream(data).accumulate(op.add).reduce(bi_func=op.add).get()
 
         self.assertEqual(out, sum(sum(range(i)) for i in range(1, size + 1)))
 
@@ -42,7 +42,7 @@ class AccumulateTest(TestCase):
 
         data = range(size)
 
-        out = Stream(data).map(lambda x: x ** 2).accumulate(op.add).reduce(op.add).get()
+        out = Stream(data).map(lambda x: x ** 2).accumulate(op.add).reduce(bi_func=op.add).get()
 
         self.assertEqual(out, sum(sum(j ** 2 for j in range(i)) for i in range(1, size + 1)))
 
