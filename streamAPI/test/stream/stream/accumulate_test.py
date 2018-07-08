@@ -2,7 +2,8 @@ import operator as op
 from itertools import accumulate
 from unittest import TestCase, main
 
-from streamAPI.stream import Stream, ToList
+from streamAPI.stream import Stream
+from streamAPI.stream.TO import ToList
 
 
 class AccumulateTest(TestCase):

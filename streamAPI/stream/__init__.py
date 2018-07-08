@@ -1,5 +1,4 @@
-from streamAPI.stream import decos
-from streamAPI.stream.TerminalOperations import *
+from streamAPI.stream import TO, decos
 from streamAPI.stream.exception import PipelineClosed
 from streamAPI.stream.optional import EMPTY, Optional
 from streamAPI.stream.parallelStream import *
@@ -12,4 +11,3 @@ del optional
 del parallelStream
 del stream
 del streamHelper
-del TerminalOperations

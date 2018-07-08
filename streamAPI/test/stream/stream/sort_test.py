@@ -1,7 +1,8 @@
 from functools import total_ordering
 from unittest import TestCase, main
 
-from streamAPI.stream import Stream, ToList
+from streamAPI.stream import Stream
+from streamAPI.stream.TO import ToList
 from streamAPI.test.testHelper import random
 
 

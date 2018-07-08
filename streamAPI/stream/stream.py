@@ -2,7 +2,7 @@ from functools import reduce, wraps
 from itertools import accumulate, chain, cycle, dropwhile, islice, takewhile, zip_longest
 from typing import Any, Generic, Iterable, Tuple, Union
 
-from streamAPI.stream.TerminalOperations import Collector
+from streamAPI.stream.TO.TerminalOperations import Collector
 from streamAPI.stream.decos import check_pipeline, close_pipeline
 from streamAPI.stream.optional import EMPTY, Optional
 from streamAPI.stream.streamHelper import ChainedCondition, Closable, Supplier
@@ -24,6 +24,7 @@ class Stream(Closable, Generic[X]):
     
     Example:
         from streamAPI.stream import *
+        from streamAPI.stream.TO import *
         from operator import attrgetter,itemgetter
 
         class Student:
@@ -177,7 +178,7 @@ class Stream(Closable, Generic[X]):
             stream = Stream([3,1,4,6]).sort()
             list(stream) -> [1, 3, 4, 6]
 
-            Stream([3,1,4,6]).sort(reverse=True).as_seq() -> [6, 4, 3, 1]
+            Stream([3,1,4,6]).sort(reverse=True).collect(ToList()) -> [6, 4, 3, 1]
 
         Example2:
             class Student:
@@ -196,7 +197,7 @@ class Stream(Closable, Generic[X]):
 
             students = [Student('A',3),Student('B',1),Student('C',4),Student('D',6)]
 
-            Stream(students).sorted(comp=Student.get_age,reverse=True).as_seq()
+            Stream(students).sorted(comp=Student.get_age,reverse=True).collect(ToList())
             -> [[name=D,age=6], [name=C,age=4], [name=A,age=3], [name=B,age=1]]
 
         :param comp:
@@ -368,7 +369,7 @@ class Stream(Closable, Generic[X]):
         creates batches of size "n" for further processing.
 
         Example:
-            Stream(range(10)).batch(3).as_seq()
+            Stream(range(10)).batch(3).collect(ToList())
             -> [(0, 1, 2), (3, 4, 5), (6, 7, 8), (9,)]
 
         :param n: batch size
@@ -385,10 +386,10 @@ class Stream(Closable, Generic[X]):
         another is stream element.
 
         Example:
-            Stream(range(4,10)).enumerate().as_seq()
+            Stream(range(4,10)).enumerate().collect(ToList())
             -> [(0, 4), (1, 5), (2, 6), (3, 7), (4, 8), (5, 9)]
 
-            Stream(range(4,10)).enumerate(10).as_seq()
+            Stream(range(4,10)).enumerate(10).collect(ToList())
              [(10, 4), (11, 5), (12, 6), (13, 7), (14, 8), (15, 9)]
 
         :param start
@@ -404,7 +405,7 @@ class Stream(Closable, Generic[X]):
         processes the element of stream till the predicate returns True.
         It is similar to "while" keyword.
 
-        Stream(range(10)).till(lambda x:x < 5).as_seq() -> [0,1,2,3,4]
+        Stream(range(10)).till(lambda x:x < 5).collect(ToList()) -> [0,1,2,3,4]
 
         :param predicate:
         :return:
@@ -418,7 +419,7 @@ class Stream(Closable, Generic[X]):
         """
         drops elements until predicate returns False.
 
-        stream.Stream(range(10)).drop_while(lambda x : x < 5).as_seq() -> [5, 6, 7, 8, 9]
+        stream.Stream(range(10)).drop_while(lambda x : x < 5).collect(ToList()) -> [5, 6, 7, 8, 9]
 
         :param predicate:
         :return:
@@ -439,13 +440,13 @@ class Stream(Closable, Generic[X]):
         itr has been exhausted or underlying stream is exhausted.
 
         Example:
-            Stream(range(100, 100000)).zip(range(5)).as_seq()
+            Stream(range(100, 100000)).zip(range(5)).collect(ToList())
             -> [(100, 0), (101, 1), (102, 2), (103, 3), (104, 4)]
 
-            Stream(range(5)).zip(range(100, 100000)).as_seq()
+            Stream(range(5)).zip(range(100, 100000)).collect(ToList())
             -> [(0, 100), (1, 101), (2, 102), (3, 103), (4, 104)]
 
-            Stream(range(20, 30)).zip(range(5),after=False).as_seq()
+            Stream(range(20, 30)).zip(range(5),after=False).collect(ToList())
             # data from range(5) will be used as first entry of tuple created by zipping
             # stream with iterable
             -> [(0, 20), (1, 21), (2, 22), (3, 23), (4, 24)]
@@ -470,10 +471,10 @@ class Stream(Closable, Generic[X]):
         default filling value will be used from "fillvalue".
 
         Example:
-            Stream(range(11, 13)).zip_longest(range(5)).as_seq()
+            Stream(range(11, 13)).zip_longest(range(5)).collect(ToList())
             -> [(11, 0), (12, 1), (None, 2), (None, 3), (None, 4)]
 
-            Stream(range(11, 13)).zip_longest(range(5),after=False,fillvalue=-1).as_seq()
+            Stream(range(11, 13)).zip_longest(range(5),after=False,fillvalue=-1).collect(ToList())
             -> [(0, 11), (1, 12), (2, -1), (3, -1), (4, -1)]
 
         :param itr:
@@ -495,7 +496,7 @@ class Stream(Closable, Generic[X]):
         Repeats iterable "itr" with stream until the Stream is exhausted.
 
         Example:
-            Stream(range(11, 16)).cycle(range(3),after=False).as_seq()
+            Stream(range(11, 16)).cycle(range(3),after=False).collect(ToList())
             -> [(0, 11), (1, 12), (2, 13), (0, 14), (1, 15)]
 
         :param itr:
@@ -515,7 +516,7 @@ class Stream(Closable, Generic[X]):
         "else_" has default value "identity" which return element as it is in case "if_" fails;
 
         Example:
-            Stream(range(10)).condition(lambda x: 3 <= x <= 7, lambda x: 1 , lambda x: 0).as_seq()
+            Stream(range(10)).condition(lambda x: 3 <= x <= 7, lambda x: 1 , lambda x: 0).collect(ToList())
             -> [0, 0, 0, 1, 1, 1, 1, 1, 0, 0]
 
         :param if_:
@@ -536,13 +537,13 @@ class Stream(Closable, Generic[X]):
                           .if_then(lambda x: x < 7,lambda x: 1)
                           .otherwise(lambda x : 2))
 
-            Stream(range(10)).conditional(condition).as_seq()
+            Stream(range(10)).conditional(condition).collect(ToList())
             ->  [0, 0, 0, 1, 1, 1, 1, 2, 2, 2]
 
             conditions = (ChainedCondition().if_then(lambda x : x < 3, lambda x : 0)
               .if_then(lambda x: x < 7,lambda x: 1).done())
 
-            Stream(range(10)).conditional(condition).as_seq()
+            Stream(range(10)).conditional(condition).collect(ToList())
             -> [0, 0, 0, 1, 1, 1, 1, 7, 8, 9]
 
 
@@ -560,10 +561,10 @@ class Stream(Closable, Generic[X]):
         Example:
             import operator as op
 
-            Stream(range(10)).accumulate(op.add).as_seq()
+            Stream(range(10)).accumulate(op.add).collect(ToList())
             -> [0, 1, 3, 6, 10, 15, 21, 28, 36, 45]
 
-            Stream(range(1,10)).accumulate(op.mul).as_seq()
+            Stream(range(1,10)).accumulate(op.mul).collect(ToList())
             -> [1, 2, 6, 24, 120, 720, 5040, 40320, 362880]
 
         :param bi_func:
@@ -591,13 +592,13 @@ class Stream(Closable, Generic[X]):
         Example1: Moving average for window size 3
             def mean(l): return sum(l)/len(l)
 
-            Stream([1,6,2,7,3]).window_function(mean , 3).as_seq()
+            Stream([1,6,2,7,3]).window_function(mean , 3).collect(ToList())
             -> [3.0, 5.0, 4.0]
 
         Example2: Averaging all past values:
             def mean(l): return sum(l)/len(l)
 
-            Stream(range(1,5)).window_function(mean , None).as_seq()
+            Stream(range(1,5)).window_function(mean , None).collect(ToList())
             -> [1.0, 1.5, 2.0, 2.5]
 
         :param func: if "n" is not None then, takes input, at any instant,

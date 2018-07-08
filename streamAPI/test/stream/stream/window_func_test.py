@@ -1,10 +1,10 @@
-7
 from decimal import Context, Decimal as D
 from statistics import mean, pstdev
 from typing import List
 from unittest import TestCase, expectedFailure, main
 
-from streamAPI.stream import Stream, ToList
+from streamAPI.stream import Stream
+from streamAPI.stream.TO import ToList
 from streamAPI.test.testHelper import random
 
 

@@ -2,8 +2,9 @@ from collections import Counter, defaultdict
 from operator import attrgetter
 from unittest import TestCase, main
 
-from streamAPI.stream import (CollectAndThen, Counting, GroupingBy, Mapping, Stream, Summing,
-                              ToList, ToSet)
+from streamAPI.stream import Stream
+from streamAPI.stream.TO import (CollectAndThen, Counting, GroupingBy, Mapping, Summing,
+                                 ToList, ToSet)
 from streamAPI.test.testHelper import random
 from streamAPI.utility import identity
 

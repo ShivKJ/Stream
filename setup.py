@@ -9,7 +9,7 @@ with open(join(__TOP_LEVEL_DIR, 'requirement.txt')) as f:
 
 setup(
     name='streamAPI',
-    version='2.0',
+    version='2.0.1',
     packages=('streamAPI', 'streamAPI.stream', 'streamAPI.utility'),
     url='https://github.com/ShivKJ/Basics',
     license='MIT License',

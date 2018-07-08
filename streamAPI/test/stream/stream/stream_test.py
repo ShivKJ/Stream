@@ -2,7 +2,8 @@ import operator as op
 from collections import defaultdict
 from unittest import TestCase, main
 
-from streamAPI.stream import Counting, GroupingBy, Mapping, Stream, ToList, ToMap, ToSet
+from streamAPI.stream import Stream
+from streamAPI.stream.TO import Counting, GroupingBy, Mapping, ToList, ToMap, ToSet
 from streamAPI.stream.optional import EMPTY, Optional
 from streamAPI.stream.streamHelper import ChainedCondition
 from streamAPI.test.testHelper import random

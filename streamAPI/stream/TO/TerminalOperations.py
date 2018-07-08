@@ -386,5 +386,5 @@ class GroupingBy(Collector):
         return {k: v.finish() for k, v in self._bucket.items()}
 
 
-if __name__ == 'streamAPI.stream.TerminalOperations':
+if __name__ == 'streamAPI.stream.TO.TerminalOperations':
     __all__ = get_functions_clazz(__name__, __file__)

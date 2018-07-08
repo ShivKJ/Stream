@@ -2,7 +2,8 @@ import operator as op
 from functools import reduce
 from unittest import TestCase, main
 
-from streamAPI.stream import Stream, ToList
+from streamAPI.stream import Stream
+from streamAPI.stream.TO import ToList
 from streamAPI.stream.streamHelper import ChainedCondition
 from streamAPI.test.testHelper import random
 
