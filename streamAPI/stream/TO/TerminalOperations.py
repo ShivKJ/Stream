@@ -2,23 +2,36 @@ from abc import ABC, abstractmethod
 from collections import deque
 from typing import Any, Dict, Union
 
-from streamAPI.stream.optional import EMPTY, Optional
+from streamAPI.stream.optional import Optional, create_optional
 from streamAPI.utility.Types import BiFunction, Function, X
 from streamAPI.utility.utils import NIL, default_comp, get_functions_clazz, identity
 
 
 class Collector(ABC):
+    """
+    Object of this class will be used in Stream.collect method.
+    """
+
     @abstractmethod
     def supply(self) -> 'Collector':
-        pass
+        """
+        supplies a new Collector.
+        :return:
+        """
 
     @abstractmethod
     def consume(self, e):
-        pass
+        """
+        Defines how to process a data "e".
+        :param e:
+        """
 
     @abstractmethod
     def finish(self):
-        pass
+        """
+        defines what to return with "consumed" elements.
+        :return:
+        """
 
 
 # ------------------------------------------------------------------
@@ -34,8 +47,8 @@ class DataHolder(Collector):
         self._data_holder = cls()
         self._cls = cls
 
-    @abstractmethod
-    def supply(self) -> Collector: pass
+    def supply(self) -> Collector:
+        return self.__class__()
 
     @abstractmethod
     def consume(self, e): pass
@@ -51,17 +64,14 @@ class ToList(DataHolder):
     Stream(range(5)).collect(ToList()) -> [0, 1, 2, 3, 4]
     """
 
-    def __init__(self, cls=list):
-        super().__init__(cls)
-
-    def supply(self):
-        return ToList(self._cls)
+    def __init__(self):
+        super().__init__(list)
 
     def consume(self, e):
         self._data_holder.append(e)
 
 
-class ToLinkedList(ToList):
+class ToLinkedList(DataHolder):
     """
     Puts elements into a 'deque'
     Stream(range(5)).collect(ToLinkedList()) -> deque([0, 1, 2, 3, 4])
@@ -69,6 +79,9 @@ class ToLinkedList(ToList):
 
     def __init__(self):
         super().__init__(deque)
+
+    def consume(self, e):
+        self._data_holder.append(e)
 
 
 class ToSet(DataHolder):
@@ -79,9 +92,6 @@ class ToSet(DataHolder):
 
     def __init__(self):
         super().__init__(cls=set)
-
-    def supply(self):
-        return ToSet()
 
     def consume(self, e):
         self._data_holder.add(e)
@@ -139,6 +149,34 @@ class ToMap(Collector):
         return ToMap(self._key_mapper, self._value_mapper, self._merger_on_conflict)
 
     def consume(self, e):
+        """
+        creates an Entry in with key using function '_key_mapper' and value
+        using function '_value_mapper'. Note that these key-value pairs are stored
+        in a dictionary so key made must to hashable.
+
+        In case, key has already been created with earlier element, a ValueError
+        will be thrown if "_merge_on_conflict" is not set, else this BiFunction
+        will be used to resolve the conflict.
+
+        Example:
+            from streamAPI.stream import *
+            from streamAPI.stream.TO import *
+
+            Stream([1,2,3,4]).collect(ToMap(lambda x:x,lambda x:x**2))
+            -> {1: 1, 2: 4, 3: 9, 4: 16}
+
+            Stream([1,2,1,4]).collect(ToMap(lambda x:x,lambda x:x**2))
+            will throw ValueError as element '1' is present multiple times.
+
+
+            Stream([1,2,1,4]).collect(ToMap(lambda x:x,lambda x:x**2,lambda o,n:o))
+            -> {1: 1, 2: 4, 4: 16} # in case of conflict, we are using old value.
+
+
+        :param e:
+        :return:
+        """
+
         bkt = self._key_mapper(e)
 
         if bkt in self._data_holder:
@@ -157,11 +195,11 @@ class ToMap(Collector):
 
 class Mapping(Collector):
     """
-    Maps using "func" function first, then collects elements
-    according to "downstream".
+    Maps elements using "func" function first, then collects transformed
+    elements according to "downstream".
 
-    Stream(range(5)).collect(Mapping(lambda x:x**2,Summing())) -> 30
-
+    Stream(range(5)).collect(Mapping(lambda x:x**2,Summing()))
+    -> 30 # sum of squares
     """
 
     def __init__(self, func: Function, downstream: Collector = None):
@@ -202,9 +240,7 @@ class MaxBy(Collector):
             self._max = e
 
     def finish(self) -> Optional:
-        e = self._max
-
-        return Optional(e) if e is not NIL else EMPTY
+        return create_optional(self._max)
 
 
 class MinBy(Collector):
@@ -229,9 +265,7 @@ class MinBy(Collector):
             self._min = e
 
     def finish(self) -> Optional:
-        e = self._min
-
-        return Optional(e) if e is not NIL else EMPTY
+        return create_optional(self._min)
 
 
 class Joining(ToLinkedList):
@@ -241,7 +275,7 @@ class Joining(ToLinkedList):
     Stream(['A','B','C']).collect(Joining(',','<','>')) -> '<A,B,C>'
     """
 
-    def __init__(self, sep='', prefix='', suffix=''):
+    def __init__(self, sep: str = '', prefix: str = '', suffix: str = ''):
         super().__init__()
 
         self._sep = sep
@@ -252,7 +286,9 @@ class Joining(ToLinkedList):
         return Joining(self._sep, self._prefix, self._suffix)
 
     def finish(self) -> str:
-        return '{}{}{}'.format(self._prefix, self._sep.join(self._data_holder), self._suffix)
+        return '{}{}{}'.format(self._prefix,
+                               self._sep.join(self._data_holder),
+                               self._suffix)
 
 
 class Counting(Collector):
@@ -343,9 +379,7 @@ class Reduce(Collector):
             self._data_holder = self._bi_func(self._data_holder, e)
 
     def finish(self) -> Optional:
-        e = self._data_holder
-
-        return Optional(e) if e is not NIL else EMPTY
+        return create_optional(self._data_holder)
 
 
 class GroupingBy(Collector):

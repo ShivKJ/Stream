@@ -1,6 +1,7 @@
 from typing import Generic, Union
 
 from streamAPI.utility.Types import Consumer, T, X
+from streamAPI.utility.utils import NIL
 
 
 class Optional(Generic[T]):
@@ -94,3 +95,7 @@ class Optional(Generic[T]):
 
 
 EMPTY = Optional(None)
+
+
+def create_optional(e):
+    return Optional(e) if e is not NIL else EMPTY
