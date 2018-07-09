@@ -122,6 +122,15 @@ class CollectAndThen(Collector):
         return self._then(self._downstream.finish())
 
 
+def on_conflict_do_nothing(o, n):
+    """
+    :param o: old value
+    :param n: new value
+    :return: old value
+    """
+    return o
+
+
 class ToMap(Collector):
     """
     Used to create map from data points.
