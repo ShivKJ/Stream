@@ -1,5 +1,6 @@
 from functools import reduce, wraps
-from itertools import accumulate, chain, cycle, dropwhile, islice, takewhile, zip_longest
+from itertools import (accumulate, chain, cycle, dropwhile, filterfalse, islice, takewhile,
+                       zip_longest)
 from typing import Any, Generic, Iterable, Tuple, Union
 
 from streamAPI.stream.TO.TerminalOperations import Collector
@@ -129,7 +130,8 @@ class Stream(Closable, Generic[X]):
         :param func:
         :param args: positional arguments required instantiate cls
         :param kwargs: kwargs required for cls.
-        :return:
+
+        :return: a new Stream class object.
         """
 
         return cls(Supplier(func), *args, **kwargs)
@@ -166,6 +168,26 @@ class Stream(Closable, Generic[X]):
         """
 
         self._pointer = filter(predicate, self._pointer)
+        return self
+
+    @check_pipeline
+    def exclude(self, predicate: Filter[X]) -> 'Stream[X]':
+        """
+        Excluding an element from the stream if 'predicate' returns True for
+        it.
+
+        from streamAPI.stream import *
+
+        def is_odd(x): return x%2==1
+
+        Stream(range(10)).exclude(is_odd).collect(TO.ToList())
+        -> [0, 2, 4, 6, 8] # every odd number will be excluded.
+
+        :param predicate:
+        :return: Stream itself
+        """
+
+        self._pointer = filterfalse(predicate, self._pointer)
         return self
 
     @check_pipeline
@@ -232,7 +254,7 @@ class Stream(Closable, Generic[X]):
         Note that, sorting is not guaranteed.
         Elements must be hashable and define equal logic(__eq__)
 
-        :return:  Stream itself
+        :return: Stream itself
         """
 
         self._pointer = Stream._yield_distinct(self._pointer)
@@ -242,8 +264,9 @@ class Stream(Closable, Generic[X]):
     def _yield_distinct(itr: Iterable[X]):
         """
         yield distinct elements from a given iterable
+
         :param itr:
-        :return:
+        :return: generator of distinct elements
         """
 
         consumer_items = set()
@@ -262,8 +285,8 @@ class Stream(Closable, Generic[X]):
             stream = Stream(range(10)).limit(3)
             list(stream) -> [0,1,2]
 
-        :param n:
-        :return:
+        :param n: maximum number of elements to be considered.
+        :return: Stream itself
         """
 
         self._pointer = islice(self._pointer, n)
@@ -300,11 +323,11 @@ class Stream(Closable, Generic[X]):
             [0, 2, 4, 6, 8, 10, 12, 14, 16, 18]
 
         :param consumer:
-        :param n:
+        :param n: invoking the consumer after each 'n'.
         :return: Stream itself
         """
 
-        assert n > 0, 'n should be positive'
+        assert n > 0, 'n should be a natural number.'
 
         self._pointer = Stream._consumer_wrapper(consumer, n=n)(self._pointer)
         return self
@@ -315,15 +338,15 @@ class Stream(Closable, Generic[X]):
         Creates a wrapper around consumer.
 
         :param consumer:
-        :param n
-        :return:
+        :param n: a natural number
+        :return: a decorator which enables iterable to be consumed after each 'n'
         """
 
         @wraps(consumer)
-        def func(generator: Iterable[X]) -> Iterable[X]:
+        def func(itr: Iterable[X]) -> Iterable[X]:
             one_to_n = cycle(range(1, n + 1))  # cycling numbers from 1 up to n
 
-            for idx, g in zip(one_to_n, generator):
+            for idx, g in zip(one_to_n, itr):
                 if idx == n:
                     consumer(g)
 
@@ -341,7 +364,7 @@ class Stream(Closable, Generic[X]):
             list(stream) -> [7, 8, 9]
 
         :param n:
-        :return:  Stream itself
+        :return: Stream itself
         """
 
         self._pointer = islice(self._pointer, n, None)
@@ -356,7 +379,7 @@ class Stream(Closable, Generic[X]):
             stream = Stream([[1,2],[3,4,5]]).flat_map()
             list(stream) -> [1, 2, 3, 4, 5]
 
-        :return:Stream itself
+        :return: Stream itself
         """
 
         self._pointer = chain.from_iterable(self._pointer)
@@ -372,7 +395,7 @@ class Stream(Closable, Generic[X]):
             -> [(0, 1, 2), (3, 4, 5), (6, 7, 8), (9,)]
 
         :param n: batch size
-        :return:
+        :return: Stream itself
         """
 
         self._pointer = divide_in_chunk(self._pointer, n)
@@ -392,7 +415,7 @@ class Stream(Closable, Generic[X]):
              [(10, 4), (11, 5), (12, 6), (13, 7), (14, 8), (15, 9)]
 
         :param start
-        :return:
+        :return: Stream itself
         """
 
         self._pointer = enumerate(self._pointer, start=start)
@@ -407,7 +430,7 @@ class Stream(Closable, Generic[X]):
         Stream(range(10)).till(lambda x:x < 5).collect(ToList()) -> [0,1,2,3,4]
 
         :param predicate:
-        :return:
+        :return: Stream itself
         """
 
         self._pointer = takewhile(predicate, self._pointer)
@@ -421,7 +444,7 @@ class Stream(Closable, Generic[X]):
         stream.Stream(range(10)).drop_while(lambda x : x < 5).collect(ToList()) -> [5, 6, 7, 8, 9]
 
         :param predicate:
-        :return:
+        :return: Stream itself
         """
 
         self._pointer = dropwhile(predicate, self._pointer)
@@ -452,7 +475,7 @@ class Stream(Closable, Generic[X]):
 
         :param itr:
         :param after
-        :return:
+        :return: Stream itself
         """
 
         if after:
@@ -479,7 +502,7 @@ class Stream(Closable, Generic[X]):
         :param itr:
         :param after:defaults to True
         :param fillvalue: defaults to None.
-        :return:
+        :return: Stream itself
         """
 
         if after:
@@ -500,7 +523,7 @@ class Stream(Closable, Generic[X]):
 
         :param itr:
         :param after: defaults to True
-        :return:
+        :return: Stream itself
         """
 
         return self.zip(cycle(itr), after=after)
@@ -521,7 +544,7 @@ class Stream(Closable, Generic[X]):
         :param if_:
         :param then:
         :param else_: by default it returns element as it is.
-        :return:
+        :return: Stream itself
         """
 
         return self.map(ChainedCondition.if_else(if_, then, else_))
@@ -547,7 +570,7 @@ class Stream(Closable, Generic[X]):
 
 
         :param chained_condition:
-        :return:
+        :return: Stream itself
         """
 
         return self.map(chained_condition)
@@ -567,7 +590,7 @@ class Stream(Closable, Generic[X]):
             -> [1, 2, 6, 24, 120, 720, 5040, 40320, 362880]
 
         :param bi_func:
-        :return:
+        :return: Stream itself
         """
 
         self._pointer = accumulate(self._pointer, bi_func)
@@ -607,7 +630,7 @@ class Stream(Closable, Generic[X]):
                      If "n" is None, the all past values in a list appended
                      with current element.
         :param n: natural number or None
-        :return:
+        :return: Stream itself
         """
 
         if n is None:
