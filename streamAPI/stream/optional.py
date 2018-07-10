@@ -17,7 +17,7 @@ class Optional(Generic[T]):
         Optional(None).present() -> True
         Optional(1).present() -> True
 
-        EMPTY.present() -> False
+        EMPTY.present() -> False # Only EMPTY.present() will return False.
 
         :return:
         """
@@ -97,5 +97,5 @@ class Optional(Generic[T]):
 EMPTY = Optional(None)
 
 
-def create_optional(e):
-    return Optional(e) if e is not NIL else EMPTY
+def create_optional(e, sentinel=NIL) -> Optional:
+    return Optional(e) if e is not sentinel else EMPTY
