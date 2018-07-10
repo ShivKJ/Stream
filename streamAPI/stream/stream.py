@@ -118,7 +118,6 @@ class Stream(Closable, Generic[X]):
         super().__init__()
 
         self._pointer = iter(data)
-        self._closed = False
 
     @classmethod
     def from_supplier(cls, func: Callable[[], X], *args, **kwargs) -> 'Stream[X]':
