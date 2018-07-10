@@ -371,8 +371,8 @@ def as_date(date_: DateTime) -> date:
     :return: date object made from "date_"
     """
 
-    raise ValueError('input is of type: {}; '
-                     'which is undefined.'.format(type(date_)))
+    raise TypeError('input is of type: {}; '
+                    'which is undefined.'.format(type(date_)))
 
 
 @as_date.register(str)

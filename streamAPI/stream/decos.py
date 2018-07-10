@@ -5,7 +5,7 @@ from streamAPI.stream.exception import PipelineClosed
 
 def _raise(is_closed: bool):
     """
-    throws exception depending on is_closed
+    throws exception if is_closed is True
     :param is_closed:
     """
 
