@@ -11,7 +11,7 @@ from streamAPI.test.testHelper import random
 from streamAPI.utility import identity
 
 
-class GroupByTest(TestCase):
+class TOTest(TestCase):
     def test_1(self):
         rnd = random()
 

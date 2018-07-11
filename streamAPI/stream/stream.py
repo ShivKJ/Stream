@@ -992,6 +992,32 @@ class Stream(Closable, Generic[X]):
 
     @close_pipeline
     @check_pipeline
+    def sum(self, start: 'X'):
+        """
+        Summing elements of stream.
+
+        class Number:
+            def __init__(self,num):
+                self.num=num
+
+            def __add__(self,other):
+                return Number(self.num + other.num)
+
+            def __str__(self):
+                return str(self.num)
+
+        data = Stream([Number(10),Number(20),Number(30)])
+        start = Number(0)
+        data.sum(start) -> 60
+
+        :param start: starting point to start sum
+        :return:
+        """
+
+        return sum(self._pointer, start)
+
+    @close_pipeline
+    @check_pipeline
     def __iter__(self) -> Iterable[X]:
         """
         This operation is one of the terminal operations
