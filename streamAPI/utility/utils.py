@@ -484,19 +484,44 @@ def get_chunk(itr: Iterable[T], rng: Union[range, int],
 
 
 # -------------------------- Comparator ----------------------------------
-def default_comp(a, b) -> int:
+def default_comp(a: X, b: X, func: Function[X, Y] = None) -> int:
     """
-    compares 'a' and 'b'.
+    compares 'a' and 'b'. (__lt__, __eq__ methods must be implemented by
+    corresponding 'class')
+
+    1) If a is equal to b then returns 0
+    2) If a is less than b then returns -1
+    3) else return 1
 
     :param a:
     :param b:
+    :param func: if not None, then comparison is made on func(a) and func(b)
+
     :return:
     """
+
+    if func is not None:
+        a = func(a)
+        b = func(b)
+
     if a < b:
         return -1
-    elif a == b:
+
+    if a == b:
         return 0
+
     return 1
+
+
+def comparing(func: Function):
+    """
+    returns "default_comp" but sets "func" kwarg using given input.
+
+    :param func:
+    :return:
+    """
+
+    return partial(default_comp, func=func)
 
 
 # ------------ importing function defined only in this module-------------

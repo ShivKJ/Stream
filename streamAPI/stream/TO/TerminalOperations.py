@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
-from collections import deque
-from typing import Any, Dict, Union
+from collections import defaultdict, deque
+from typing import Any, DefaultDict, Union
 
 from streamAPI.stream.optional import Optional, create_optional
 from streamAPI.utility.Types import BiFunction, Function, X
@@ -373,6 +373,8 @@ class Reduce(Collector):
     """
 
     def __init__(self, o=NIL, *, bi_func: BiFunction):
+        super().__init__()
+
         self._o = o
         self._bi_func = bi_func
 
@@ -401,29 +403,19 @@ class GroupingBy(Collector):
     -> {'A': {'B': 2, 'C': 1}, 'B': {'D': 2, 'W': 1}, 'D': {'E': 1}}
     """
 
-    def __init__(self, grp: Function, downstream: Collector = None):
-        self._group_by = grp
-        self._bucket: Dict[Any, Collector] = {}
+    def __init__(self, group_by: Function, downstream: Collector = None):
+        super().__init__()
 
-        if downstream is None:
-            self._downstream = ToList()
-        else:
-            self._downstream = downstream
+        self._group_by = group_by
+        self._downstream = downstream or ToList()
+        self._bucket: DefaultDict[Any, Collector] = defaultdict(self._downstream.supply)
 
     def supply(self) -> Collector:
         return GroupingBy(self._group_by, self._downstream.supply())
 
-    def _get(self, bkt) -> Collector:
-        if bkt not in self._bucket:
-            ptr = self._downstream.supply()
-            self._bucket[bkt] = ptr
-        else:
-            ptr = self._bucket[bkt]
-
-        return ptr
-
     def consume(self, e):
-        self._get(self._group_by(e)).consume(e)
+        bkt = self._group_by(e)
+        self._bucket[bkt].consume(e)
 
     def finish(self) -> dict:
         return {k: v.finish() for k, v in self._bucket.items()}
