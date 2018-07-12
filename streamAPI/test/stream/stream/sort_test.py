@@ -98,7 +98,7 @@ class SortTest(TestCase):
         out = (Stream.from_supplier(rnd.random)
                .limit(size)
                .map(Data)
-               .sort(comp=Data.e, reverse=True)
+               .sort(key=Data.e, reverse=True)
                .collect(ToList()))
 
         rnd.reset()

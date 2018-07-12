@@ -191,7 +191,7 @@ class Stream(Closable, Generic[X]):
         return self
 
     @check_pipeline
-    def sort(self, comp=None, reverse: bool = False) -> 'Stream[X]':
+    def sort(self, key=None, reverse: bool = False) -> 'Stream[X]':
         """
         Sorts element of Stream.
 
@@ -218,29 +218,29 @@ class Stream(Closable, Generic[X]):
 
             students = [Student('A',3),Student('B',1),Student('C',4),Student('D',6)]
 
-            Stream(students).sorted(comp=Student.get_age,reverse=True).collect(ToList())
+            Stream(students).sorted(key=Student.get_age,reverse=True).collect(ToList())
             -> [[name=D,age=6], [name=C,age=4], [name=A,age=3], [name=B,age=1]]
 
-        :param comp:
+        :param key:
         :param reverse:
         :return: Stream itself
         """
 
-        self._pointer = Stream._yield_sorted(self._pointer, comp, reverse)
+        self._pointer = Stream._yield_sorted(self._pointer, key, reverse)
         return self
 
     @staticmethod
-    def _yield_sorted(itr: Iterable[X], comp, reverse: bool) -> Iterable[X]:
+    def _yield_sorted(itr: Iterable[X], key, reverse: bool) -> Iterable[X]:
         """
         Creates a generator having elements in sorted order.
 
         :param itr:
-        :param comp:
+        :param key:
         :param reverse:
         :return:
         """
 
-        yield from sorted(itr, key=comp, reverse=reverse)
+        yield from sorted(itr, key=key, reverse=reverse)
 
     @check_pipeline
     def distinct(self) -> 'Stream[X]':
@@ -714,7 +714,7 @@ class Stream(Closable, Generic[X]):
 
     @close_pipeline
     @check_pipeline
-    def min(self, comp=None) -> Optional[Any]:
+    def min(self, key=None) -> Optional[Any]:
         """
         This operation is one of the terminal operations
         finds minimum element in stream.
@@ -740,20 +740,20 @@ class Stream(Closable, Generic[X]):
 
             students = [Student('A',3),Student('B',1),Student('C',4),Student('D',6)]
 
-            Stream(students).min(comp=Student.get_age) -> Optional[[name=B,age=1]]
+            Stream(students).min(key=Student.get_age) -> Optional[[name=B,age=1]]
 
-        :param comp:
+        :param key:
         :return:
         """
 
         try:
-            return Optional(min(self._pointer, key=comp) if comp else min(self._pointer))
+            return Optional(min(self._pointer, key=key) if key else min(self._pointer))
         except ValueError:
             return EMPTY
 
     @close_pipeline
     @check_pipeline
-    def max(self, comp=None) -> Optional[Any]:
+    def max(self, key=None) -> Optional[Any]:
         """
         This operation is one of the terminal operations.
         finds maximum element in stream.
@@ -779,14 +779,14 @@ class Stream(Closable, Generic[X]):
 
             students = [Student('A',3),Student('B',1),Student('C',4),Student('D',6)]
 
-            Stream(students).max(comp=Student.get_age) -> Optional[[name=D,age=6]]
+            Stream(students).max(key=Student.get_age) -> Optional[[name=D,age=6]]
 
-        :param comp:
+        :param key:
         :return:
         """
 
         try:
-            return Optional(max(self._pointer, key=comp) if comp else max(self._pointer))
+            return Optional(max(self._pointer, key=key) if key else max(self._pointer))
         except ValueError:
             return EMPTY
 
