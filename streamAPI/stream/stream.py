@@ -980,6 +980,7 @@ class Stream(Closable, Generic[X]):
     def collect(self, collector: Collector):
         """
         This operation is one of the terminal operations.
+        For more detail see: streamAPI.stream.TO package.
 
         :param collector:
         :return:

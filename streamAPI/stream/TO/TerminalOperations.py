@@ -7,6 +7,26 @@ from streamAPI.utility.Types import BiFunction, Function, X
 from streamAPI.utility.utils import NIL, default_comp, get_functions_clazz, identity
 
 
+# This module implements some of the useful implementations of "Collector"
+# abstract class.
+
+# Currently there are following implementations:
+# 1)  ToList: Collects stream elements into a "list"
+# 2)  ToLinkedList: Collects stream elements into a "deque"
+# 3)  ToSet: Collects stream elements into "set"
+# 4)  CollectAndThen: firstly holds elements into a container using a downstream operation,
+#                     and then applies a function on it.
+# 5)  ToMap: Creates a dictionary from stream elements.
+# 6)  Mapping: transforms stream elements and then collect then using downstream operation.
+# 7)  MaxBy: Finds max element from stream (output will be of type "Optional")
+# 8)  MinBy: Finds min element from stream (output will be of type "Optional")
+# 9)  Joining: Joins string stream using separator "sep", "prefix" and "suffix".
+# 10) Counting: finds number of element in stream.
+# 11) Summing: sums elements of stream.
+# 12) Averaging: finds average of elements of stream.
+# 13) Reduce: Reduces stream elements using Binary function "bi_func". (output will be of type "Optional")
+# 14) GroupingBy: groups stream elements into bucket (keys in dictionary are referred as buckets.).
+
 class Collector(ABC):
     """
     Object of this class will be used in Stream.collect method.
