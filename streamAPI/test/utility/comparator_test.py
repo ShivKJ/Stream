@@ -80,10 +80,6 @@ class CompTest(TestCase):
 
         def mod_5(x: int): return x % 5
 
-        # We will be comparing result obtained by reversing comparator in MaxBy
-        # so that we get "min" in each bucket created by "group by" operation; and
-        # then comparing this result with the result obtained by MinBy.
-
         bkt_min = Stream(data).collect(GroupingBy(mod_5, MinBy()))
 
         temp = defaultdict(list)
