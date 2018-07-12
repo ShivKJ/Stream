@@ -26,26 +26,26 @@ class CompTest(TestCase):
         self.assertDictEqual(bkt_max, out_target)
 
     def test_2(self):
-        class Number:
+        class Data:
             def __init__(self, num):
-                self.num = num
+                self._num = num
 
             def __str__(self) -> str:
-                return '[' + str(self.num) + ']'
+                return '[' + str(self._num) + ']'
 
             def __repr__(self):
                 return str(self)
 
-            def __eq__(self, other: 'Number'):
-                return self.num == other.num
+            def __eq__(self, other: 'Data'):
+                return self._num == other._num
 
         rnd = random()
 
-        data = [Number(x) for x in rnd.int_range(1, 100, size=10)]
+        data = [Data(x) for x in rnd.int_range(1, 100, size=10)]
 
-        mod_5 = lambda x: x.num % 5
+        mod_5 = lambda x: x._num % 5
 
-        comp_key = attrgetter('num')
+        comp_key = attrgetter('_num')
 
         bkt_max = Stream(data).collect(GroupingBy(mod_5,
                                                   MaxBy(comparing(comp_key))))
