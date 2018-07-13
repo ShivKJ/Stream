@@ -189,7 +189,7 @@ class TOTest(TestCase):
                 self.country = country
                 self.state = state
                 self.age = age
-                self.sex = self
+                self.sex = sex
 
         ps = [Person(rnd.choice(countries),
                      rnd.randrange(1, 4),
@@ -202,15 +202,15 @@ class TOTest(TestCase):
                                           GroupingBy(attrgetter('sex'),
                                                      Counting())))
 
-        filter = lambda x: 20 <= x.age <= 50  # considering person of age between 20 and 50
-        # (both inclusive)
+        def _filter(x: Person):
+            return 20 <= x.age <= 50  # considering person of age between 20 and 50 (both inclusive)
 
-        out = Stream(ps).filter(filter).collect(collector)
+        out = Stream(ps).filter(_filter).collect(collector)
 
         out_target = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
 
         for p in ps:
-            if filter(p):
+            if _filter(p):
                 out_target[p.country][p.state][p.sex] += 1
 
         self.assertDictEqual(out, out_target)
