@@ -5,7 +5,6 @@
 *.log
 *.log.*
 *.json
-# if some file should not be ignored then use: !file_name.extension Where .extension is ignored
 
 *#*
 *.class
