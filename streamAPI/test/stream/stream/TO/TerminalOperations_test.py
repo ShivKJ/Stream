@@ -1,3 +1,8 @@
+"""
+author: Shiv
+email: shivkj001@gmail.com
+"""
+
 import operator as op
 from collections import Counter, defaultdict
 from math import factorial

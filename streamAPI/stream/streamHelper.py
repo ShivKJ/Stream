@@ -1,3 +1,8 @@
+"""
+author: Shiv
+email: shivkj001@gmail.com
+"""
+
 from abc import ABC, abstractmethod
 from collections import deque
 from typing import Callable, Deque, Iterable

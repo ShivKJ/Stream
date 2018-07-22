@@ -1,11 +1,7 @@
-from abc import ABC, abstractmethod
-from collections import defaultdict, deque
-from typing import Any, DefaultDict, Union
-
-from streamAPI.stream.optional import Optional, create_optional
-from streamAPI.utility.Types import BiFunction, Function, X
-from streamAPI.utility.utils import NIL, default_comp, get_functions_clazz, identity
-
+"""
+author: Shiv
+email: shivkj001@gmail.com
+"""
 
 # This module implements some of the useful implementations of "Collector"
 # abstract class.
@@ -26,6 +22,15 @@ from streamAPI.utility.utils import NIL, default_comp, get_functions_clazz, iden
 # 12) Averaging: finds average of elements of stream.
 # 13) Reduce: Reduces stream elements using Binary function "bi_func". (output will be of type "Optional")
 # 14) GroupingBy: groups stream elements into bucket (keys in dictionary are referred as buckets.).
+
+from abc import ABC, abstractmethod
+from collections import defaultdict, deque
+from typing import Any, DefaultDict, Union
+
+from streamAPI.stream.optional import Optional, create_optional
+from streamAPI.utility.Types import BiFunction, Function, X
+from streamAPI.utility.utils import NIL, default_comp, get_functions_clazz, identity
+
 
 class Collector(ABC):
     """

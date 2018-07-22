@@ -1,3 +1,8 @@
+"""
+author: Shiv
+email: shivkj001@gmail.com
+"""
+
 from typing import Generic, Union
 
 from streamAPI.utility.Types import Consumer, T, X

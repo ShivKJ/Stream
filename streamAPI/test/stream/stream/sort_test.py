@@ -1,3 +1,8 @@
+"""
+author: Shiv
+email: shivkj001@gmail.com
+"""
+
 from functools import total_ordering
 from unittest import TestCase, main
 

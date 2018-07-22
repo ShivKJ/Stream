@@ -1,3 +1,8 @@
+"""
+author: Shiv
+email: shivkj001@gmail.com
+"""
+
 import json
 from csv import DictReader, reader as ListReader
 from datetime import date, datetime, timedelta

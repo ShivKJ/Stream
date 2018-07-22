@@ -1,3 +1,8 @@
+"""
+author: Shiv
+email: shivkj001@gmail.com
+"""
+
 from collections import deque
 from concurrent.futures import (Executor, Future, ProcessPoolExecutor as PPE,
                                 ThreadPoolExecutor as TPE, as_completed)

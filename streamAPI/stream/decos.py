@@ -1,3 +1,8 @@
+"""
+author: Shiv
+email: shivkj001@gmail.com
+"""
+
 from decorator import decorator
 
 from streamAPI.stream.exception import PipelineClosed

@@ -1,3 +1,8 @@
+"""
+author: Shiv
+email: shivkj001@gmail.com
+"""
+
 from unittest import TestCase, expectedFailure, main
 
 from streamAPI.stream.optional import EMPTY, Optional

@@ -1,3 +1,8 @@
+"""
+author: Shiv
+email: shivkj001@gmail.com
+"""
+
 from datetime import date, datetime
 from typing import Callable, Iterable, TypeVar, Union
 

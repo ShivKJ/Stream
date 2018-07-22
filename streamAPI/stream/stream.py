@@ -1,3 +1,8 @@
+"""
+author: Shiv
+email: shivkj001@gmail.com
+"""
+
 from functools import reduce, wraps
 from itertools import (accumulate, chain, cycle, dropwhile, filterfalse, islice, takewhile,
                        zip_longest)

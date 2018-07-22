@@ -1,3 +1,8 @@
+"""
+author: Shiv
+email: shivkj001@gmail.com
+"""
+
 from decimal import Context, Decimal as D
 from statistics import mean, pstdev
 from typing import List
