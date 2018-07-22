@@ -61,11 +61,11 @@ class DataHolder(Collector):
     container such as 'list','set','deque' etc.
     """
 
-    def __init__(self, cls):
+    def __init__(self, container_class):
         super().__init__()
 
-        self._data_holder = cls()
-        self._cls = cls
+        self._data_holder = container_class()
+        self._cls = container_class
 
     def supply(self) -> Collector:
         return self.__class__()
@@ -85,7 +85,7 @@ class ToList(DataHolder):
     """
 
     def __init__(self):
-        super().__init__(list)
+        super().__init__(container_class=list)
 
     def consume(self, e):
         self._data_holder.append(e)
@@ -98,7 +98,7 @@ class ToLinkedList(DataHolder):
     """
 
     def __init__(self):
-        super().__init__(deque)
+        super().__init__(container_class=deque)
 
     def consume(self, e):
         self._data_holder.append(e)
@@ -111,7 +111,7 @@ class ToSet(DataHolder):
     """
 
     def __init__(self):
-        super().__init__(cls=set)
+        super().__init__(container_class=set)
 
     def consume(self, e):
         self._data_holder.add(e)
@@ -393,6 +393,14 @@ class Reduce(Collector):
     """
 
     def __init__(self, o=NIL, *, bi_func: BiFunction):
+        """
+        Reduces Stream data.
+
+        :param o: initial point, defaults to NIL
+        :param bi_func: reducing function
+
+        """
+
         super().__init__()
 
         self._o = o

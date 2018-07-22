@@ -1,4 +1,4 @@
-import operator  as op
+import operator as op
 from collections import Counter, defaultdict
 from math import factorial
 from operator import attrgetter
