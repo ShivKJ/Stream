@@ -215,7 +215,7 @@ class ToMap(Collector):
 
         if bkt in self._data_holder:
             if self._merger_on_conflict is None:
-                raise ValueError('k : {} is already present.'.format(bkt))
+                raise ValueError(f'k : {bkt} is already present.')
 
             old_v = self._data_holder[bkt]
 

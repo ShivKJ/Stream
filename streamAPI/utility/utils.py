@@ -12,9 +12,8 @@ from logging import getLogger
 from operator import itemgetter
 from os import walk
 from os.path import abspath, join
-from typing import Callable, Dict, Iterable, List, Tuple, Union
-
 from time import time
+from typing import Callable, Dict, Iterable, List, Tuple, Union
 
 from streamAPI.utility.Types import DateTime, Filter, Function, PathGenerator, T, X, Y
 
@@ -220,7 +219,7 @@ class DB:
         return str(self), self.password
 
     def __str__(self) -> str:
-        return 'psql -U {user} -d {dbname} -h {host} -p {port}'.format(**self.__dict__)
+        return f'psql -U {self.user} -d {self.dbname} -h {self.host} -p {self.port}'
 
     def __repr__(self) -> str:
         return str(self)
@@ -475,8 +474,8 @@ def get_chunk(itr: Iterable[T], rng: Union[range, int],
     """
 
     if not isinstance(rng, (range, int)):
-        raise TypeError("rng should be either of type 'range' or "
-                        "'int' but given: {}".format(type(rng)))
+        raise TypeError(f"rng should be either of type 'range' or "
+                        "'int' but given: {type(rng)}")
 
     if isinstance(rng, int):
         assert rng > 0, 'chunk size must be positive'

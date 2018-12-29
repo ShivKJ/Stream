@@ -78,7 +78,7 @@ class Optional(Generic[T]):
         return self._data
 
     def __str__(self):
-        return 'Optional[' + str(self._data) + ']' if self is not EMPTY else 'EMPTY'
+        return f'Optional[{str(self._data)}]' if self is not EMPTY else 'EMPTY'
 
     def __repr__(self):
         return str(self)
