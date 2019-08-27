@@ -7,13 +7,14 @@ import json
 from csv import DictReader, reader as ListReader
 from datetime import date, datetime, timedelta
 from functools import partial, singledispatch, wraps
-from inspect import FullArgSpec, getfullargspec
 from logging import getLogger
 from operator import itemgetter
-from os import walk
+from os import getpid, walk
 from os.path import abspath, join
 from time import time
 from typing import Callable, Dict, Iterable, List, Tuple, Union
+
+from psutil import Process
 
 from streamAPI.utility.Types import DateTime, Filter, Function, PathGenerator, T, X, Y
 
@@ -77,109 +78,14 @@ def execution_time(logger_name: str = None, prefix: str = None):
     return _execution_time
 
 
-class VarArgPresent(Exception):
-    pass
-
-
-def constructor_setter(throw_var_args_exception=True):
+def memory_usage(pid=None):
     """
-    This decorator sets objects attribute name same as defined in its constructor.
-    kwargs keys also contribute to object attribute along with key only args.
-
-    In case, variable argument is present in constructor, Exception VarArgPresent is thrown.
-
-    Example 1:
-
-    class Foo:
-        @constructor_setter(throw_var_args_exception=True)
-        def __init__(self, a, b, **kwargs):
-            pass
-
-    kwargs = dict(p=3, q=4)
-
-    foo = Foo(10,20, **kwargs)
-    print(foo.a, foo.b, foo.p, foo.q)
-
-    Example 2:
-
-    class Foo:
-        @constructor_setter(throw_var_args_exception=True)
-        def __init__(self, a, *, e, **kwargs):
-            pass
-
-    foo = Foo(1, e=2)
-
-    print(foo.a, foo.e)
-
-    :param throw_var_args_exception: if exception has to be thrown in case of variable args
-    :return:
+    :param pid:
+    :return: finds memory used by "pid" in MB
     """
+    pid = pid or getpid()
 
-    def _same_name_as_constructor(ins: FullArgSpec, *args, **kwargs) -> dict:
-        """
-        Finds attributes to be set in object
-        :param ins:
-        :param args:
-        :param kwargs:
-        :return: dictionary of keys as attr name and values as attr value.
-        """
-        if throw_var_args_exception and ins.varargs is not None:
-            raise VarArgPresent('variable argument is present.')
-
-        obj_dict = {}
-
-        if ins.defaults is not None:
-            """
-            def foo(a, b, p=1, q=2, *, r):pass
-            
-            ins.defaults is tuple (1,2)
-            To get names, we use ins.args that is (a,b,p,q) here.
-            
-            Note that, values of p and q will be updated from kwargs if present in it.  
-            """
-
-            key_args_names = ins.args[-len(ins.defaults):]  # picking names of default keys
-            obj_dict.update(zip(key_args_names, ins.defaults))
-
-        if ins.kwonlydefaults is not None:
-            # when key_only args which comes after '*' in function definition.
-            # It is not None which means they have default values
-            """
-            def foo(a, b, p=1, *, q=2, r):pass
-            
-            ins.kwonlydefaults is dictionary dict(q=2).
-            
-            """
-            obj_dict.update(ins.kwonlydefaults)
-
-        obj_dict.update(**kwargs)
-        """
-        Now checking if kwonlyargs have been initialized.
-        
-        def foo(a, b, p=1, *, q=2, r):pass
-        here kwonlyargs is [q, r].
-        Note that we have already populated 'q' in dictionary obj_dict using ins.kwonlydefaults.
-        """
-
-        for k in ins.kwonlyargs:
-            if k not in obj_dict:
-                raise ValueError('{} is absent in argument and it is keyonly args')
-
-        # Updating varargs in obj_dict. '1' stands for self, ignoring it.
-        obj_dict.update(zip(ins.args[1:], args))
-
-        return obj_dict
-
-    def _constructor_setter(__init__):
-        @wraps(__init__)
-        def f(self, *args, **kwargs):
-            ins = getfullargspec(__init__)
-            self.__dict__.update(_same_name_as_constructor(ins, *args, **kwargs))
-            __init__(self, *args, **kwargs)
-
-        return f
-
-    return _constructor_setter
+    return Process(pid).memory_info().rss / (1024 ** 2)
 
 
 # -----------------------------------------------------
