@@ -1,16 +1,16 @@
 from os.path import dirname, join, realpath
 
-from setuptools import setup
+from setuptools import find_packages, setup
 
 __TOP_LEVEL_DIR = dirname(realpath(__file__))
 
 with open(join(__TOP_LEVEL_DIR, 'requirement.txt')) as f:
-    dependencies = [pkg.strip() for pkg in f]
+    dependencies = tuple(pkg.strip() for pkg in f)
 
 setup(
     name='streamAPI',
     version='2.0.4',
-    packages=('streamAPI', 'streamAPI.stream', 'streamAPI.utility', 'streamAPI.stream.TO'),
+    packages=tuple(pkg for pkg in find_packages(__TOP_LEVEL_DIR) if 'test.' not in pkg),
     url='https://github.com/ShivKJ/Basics',
     license='MIT License',
     author='Shiv',
