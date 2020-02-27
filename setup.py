@@ -22,7 +22,7 @@ setup(
     platforms='ubuntu',
     classifiers=(
         'Programming Language :: Python :: 3.6',
-        'License :: MIT License',
+        'License :: OSI Approved :: MIT License',
         'Topic :: Software Development :: Libraries :: Python Modules'
     )
 )
