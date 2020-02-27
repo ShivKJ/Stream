@@ -3,7 +3,8 @@
 * Inside a virtualenv            : pip3 install streamAPI -U
 * If you want to install globally: sudo -H pip3 install streamAPI -U
 * To install via git: pip3 install git+https://github.com/ShivKJ/Basics.git@master
-* current version: 2.0.2
+* current version: 2.0.4
+* To run test: python -m unittest discover -s streamAPI/test/ -p '*_test.py'
 
 
 ## Philosophy
