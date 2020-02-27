@@ -19,28 +19,6 @@ class UtilityTest(unittest.TestCase):
         self.assertEqual(utility.get_file_name('a/b/c/d.text', -2), 'c')
         self.assertEqual(utility.get_file_name('a/b/c/d.text', 0), 'a')
 
-    def test_constructor(self):
-        class Foo:
-            @utility.constructor_setter(throw_var_args_exception=True)
-            def __init__(self, a, b, p=3, **kwargs): pass
-
-        foo = Foo(1, 2, **dict(p=4, q=10))
-        self.assertDictEqual(vars(foo), dict(a=1, b=2, p=4, q=10))
-
-        class Foo:
-            @utility.constructor_setter(throw_var_args_exception=True)
-            def __init__(self, a, b, p=3, *, q): pass
-
-        foo = Foo(1, 2, p=5, q=100)
-        self.assertDictEqual(vars(foo), dict(a=1, b=2, p=5, q=100))
-
-        class Foo:
-            @utility.constructor_setter(throw_var_args_exception=True)
-            def __init__(self, a, b, p=3, *, q, **kwargs): pass
-
-        foo = Foo(1, 2, p=5, q=100, **dict(r=9))
-        self.assertDictEqual(vars(foo), dict(a=1, b=2, p=5, q=100, r=9))
-
     def test_filter_transform(self):
         self.assertTupleEqual(tuple(utility.filter_transform(range(10),
                                                              lambda x: x % 2,
