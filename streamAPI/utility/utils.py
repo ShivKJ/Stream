@@ -23,7 +23,7 @@ NIL = object()
 
 
 # --------------------------- The decorators -----------------------------------
-def execution_time(function=None, logger_name: str = None, prefix: str = None):
+def execution_time(function=None, *, logger_name: str = None, prefix: str = None):
     """
     logs time taken to execute a function to file associated with logger_name.
     if logger_name is None then creates a log file in current dir to log execution time,
