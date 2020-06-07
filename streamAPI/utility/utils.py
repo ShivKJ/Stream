@@ -23,7 +23,7 @@ NIL = object()
 
 
 # --------------------------- The decorators -----------------------------------
-def execution_time(logger_name: str = None, prefix: str = None):
+def execution_time(function=None, logger_name: str = None, prefix: str = None):
     """
     logs time taken to execute a function to file associated with logger_name.
     if logger_name is None then creates a log file in current dir to log execution time,
@@ -34,6 +34,11 @@ def execution_time(logger_name: str = None, prefix: str = None):
         def function(*args,**kwargs):
             pass
 
+        @execution_time
+        def function(*args,**kwargs):
+            pass
+
+    :param function: wrapping function
     :param logger_name:
     :param prefix: to be added before every logging message
     :return a decorator which will applied on function
@@ -76,7 +81,10 @@ def execution_time(logger_name: str = None, prefix: str = None):
 
         return f
 
-    return _execution_time
+    if function is None:
+        return _execution_time
+
+    return _execution_time(function)
 
 
 def memory_usage(pid=None):
