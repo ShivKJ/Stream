@@ -126,20 +126,17 @@ class Stream(Closable, Generic[X]):
         self._pointer = iter(data)
 
     @classmethod
-    def from_supplier(cls, func: Callable[[], X], *args, **kwargs) -> 'Stream[X]':
+    def from_supplier(cls, func: Callable[[], X]) -> 'Stream[X]':
         """
 
         Generates a stream from a callable function.(see Supplier class in
         streamHelper module for more detail).
 
         :param func:
-        :param args: positional arguments required instantiate cls
-        :param kwargs: kwargs required for cls.
-
         :return: a new Stream class object.
         """
 
-        return cls(Supplier(func), *args, **kwargs)
+        return cls(Supplier(func))
 
     @check_pipeline
     def map(self, func: Function[X, Y]) -> 'Stream[Y]':
