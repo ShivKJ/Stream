@@ -23,7 +23,7 @@ NIL = object()
 
 
 # --------------------------- The decorators -----------------------------------
-def execution_time(function=None, *, logger_name: str = None, prefix: str = None):
+def execution_time(function=None, *, logger_name: str = None, prefix: str = None, append_runtime=False):
     """
     logs time taken to execute a function to file associated with logger_name.
     if logger_name is None then creates a log file in current dir to log execution time,
@@ -41,6 +41,8 @@ def execution_time(function=None, *, logger_name: str = None, prefix: str = None
     :param function: wrapping function
     :param logger_name:
     :param prefix: to be added before every logging message
+    :param append_runtime: if True then appends time_taken in function output, output must be of type dict,
+                           else runtime will not be appended
     :return a decorator which will applied on function
     """
 
@@ -74,9 +76,14 @@ def execution_time(function=None, *, logger_name: str = None, prefix: str = None
         def f(*args, **kwargs):
             start_time = time()
             output = func(*args, **kwargs)
+            time_taken = time() - start_time
+
+            if append_runtime and isinstance(output, dict):
+                output['time_taken'] = time_taken
 
             logger.info(message('time taken to execute "%s": %0.3f seconds'),
-                        func.__name__, time() - start_time)
+                        func.__name__, time_taken)
+
             return output
 
         return f
@@ -271,7 +278,7 @@ def csv_itr(file: str, as_dict=True) -> Iterable[Dict[str, str]]:
     :return: row of csv
     """
     with open(file) as f:
-        yield from (DictReader(f) if as_dict else ListReader(f))
+        yield from DictReader(f) if as_dict else ListReader(f)
 
 
 csv_ListReader: Function[str, Iterable[List[str]]] = partial(csv_itr, as_dict=False)
