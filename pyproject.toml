@@ -1,0 +1,52 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+
+[project]
+name = "streamAPI"
+
+authors = [
+    { name = "Shiv Krishna Jaiswal", email = "shivkj001@gmail.com" }
+]
+maintainers = [
+    { name = "Shiv Krishna Jaiswal", email = "shivkj001@gmail.com" }
+]
+description = 'basics utility and stream processing functionality'
+readme = { file = "README.md", content-type = "text/markdown" }
+license = { file = "LICENSE" }
+requires-python = ">= 3.8"
+dynamic = [
+    "dependencies",
+    "version",
+    "optional-dependencies",
+]
+keywords = ["stream", "streamAPI", "fluent"]
+classifiers = [
+    #   3 - Alpha
+    #   4 - Beta
+    #   5 - Production/Stable
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Build Tools",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.urls]
+Homepage = "https://github.com/ShivKJ/Stream"
+Documentation = "https://github.com/ShivKJ/Stream"
+Repository = "https://github.com/ShivKJ/Stream"
+Issues = "https://github.com/ShivKJ/Stream/issues"
+
+[tool.setuptools.dynamic]
+version = { attr = "streamAPI.__version__" }
+
+dependencies = { file = ["requirements/requirements.txt"] }
+optional-dependencies.test = { file = ["requirements/test-requirements.txt"] }

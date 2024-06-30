@@ -5,7 +5,7 @@ email: shivkj001@gmail.com
 
 from unittest import TestCase, expectedFailure, main
 
-from streamAPI.test.testHelper import random
+from streamAPI.testHelper import random
 from streamAPI.utility.utils import get_chunk
 
 

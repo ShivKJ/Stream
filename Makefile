@@ -1,12 +1,28 @@
-.PHONY: clean clean-build install-dev install uninstall dist
-.DEFAULT_GOAL := install-dev
+.PHONY: build upload test version
+.DEFAULT_GOAL := build
 
-clean: clean-build clean-pyc
+clean: .clean-build .clean-pyc
 
-clean-build: ## remove build artifacts
+build: clean ## builds source and wheel package
+	@python -m build
+	@twine check dist/*
+
+
+upload: ## run tests quickly with the default Python
+	@twine upload -r stream --verbose dist/*
+
+test:
+	@tox -p
+
+version:
+	bump-my-version bump --allow-dirty --verbose minor --commit --tag
+
+.clean-build: ## remove build artifacts
 	rm -rf build/
 	rm -rf dist/
 	rm -rf eggs/
+	rm -rf .tox/
+	rm -rf .pytest/
 
 	@echo Removing .egg
 	@find . -name '*.egg' -exec rm -f {} +
@@ -16,7 +32,7 @@ clean-build: ## remove build artifacts
 
 
 
-clean-pyc: ## remove Python file artifacts
+.clean-pyc: ## remove Python file artifacts
 	@echo Removing .pyc file
 	@find . -name '*.pyc' -exec rm -f {} +
 
@@ -28,21 +44,3 @@ clean-pyc: ## remove Python file artifacts
 
 	@echo Removing __pycache__ folder
 	@find . -name '__pycache__' -exec rm -fr {} +
-
-
-install-dev: clean uninstall
-	@pip install -e .
-
-install: clean uninstall
-	@python setup.py install
-
-uninstall:
-	@echo Uninstall StreamAPI lib
-	@pip uninstall -y streamAPI
-
-dist: clean ## builds source and wheel package
-	python setup.py sdist
-	python setup.py bdist_wheel
-
-test: ## run tests quickly with the default Python
-	python -m unittest discover ./streamAPI/test -p '*_test.py'

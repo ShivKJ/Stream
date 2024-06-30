@@ -1,5 +1,0 @@
-decorator==4.4.2
-psutil==5.7.0
-psycopg2==2.8.5
-python-dateutil==2.7.3
-six==1.15.0

@@ -12,7 +12,7 @@ from unittest import TestCase, expectedFailure, main
 from streamAPI.stream import Stream
 from streamAPI.stream.TO import (CollectAndThen, Counting, GroupingBy, Joining, Mapping, Reduce,
                                  Summing, ToList, ToMap, ToSet, on_conflict_do_nothing)
-from streamAPI.test.testHelper import random
+from streamAPI.testHelper import random
 from streamAPI.utility import identity
 
 

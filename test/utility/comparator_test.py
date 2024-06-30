@@ -9,7 +9,7 @@ from unittest import TestCase, main
 
 from streamAPI.stream import Optional, Stream
 from streamAPI.stream.TO import GroupingBy, MaxBy, MinBy
-from streamAPI.test.testHelper import random
+from streamAPI.testHelper import random
 from streamAPI.utility import comparing
 
 

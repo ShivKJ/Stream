@@ -12,7 +12,6 @@ from operator import itemgetter
 from os import getpid, walk
 from os.path import abspath, join
 from time import time
-from tkinter import Tk
 from typing import Callable, Dict, Iterable, List, Tuple, Union
 
 from psutil import Process
@@ -451,6 +450,7 @@ def comparing(func: Function):
 
 
 def get_clipboard() -> str:
+    from tkinter import Tk
     return Tk().clipboard_get()
 
 

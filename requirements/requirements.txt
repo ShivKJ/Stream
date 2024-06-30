@@ -1,0 +1,4 @@
+bump-my-version==0.24.1
+decorator==5.1.1
+psutil==6.0.0
+python-dateutil==2.9.0

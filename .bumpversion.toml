@@ -1,0 +1,12 @@
+[tool.bumpversion]
+current_version = "2.4.0"
+commit = false
+commit_args = "--no-verify"
+tag = false
+tag_name = "v{new_version}"
+allow_dirty = true
+
+message = "Version updated from {current_version} to {new_version}"
+
+[[tool.bumpversion.files]]
+filename = "src/streamAPI/__init__.py"

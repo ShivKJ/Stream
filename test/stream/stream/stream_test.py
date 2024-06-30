@@ -11,7 +11,7 @@ from streamAPI.stream import Stream
 from streamAPI.stream.TO import Counting, GroupingBy, Mapping, ToList, ToMap, ToSet
 from streamAPI.stream.optional import EMPTY, Optional
 from streamAPI.stream.streamHelper import ChainedCondition
-from streamAPI.test.testHelper import random
+from streamAPI.testHelper import random
 from streamAPI.utility.utils import identity
 
 

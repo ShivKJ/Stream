@@ -10,7 +10,7 @@ from unittest import TestCase, expectedFailure, main
 
 from streamAPI.stream import Stream
 from streamAPI.stream.TO import ToList
-from streamAPI.test.testHelper import random
+from streamAPI.testHelper import random
 
 
 class MyTestCase(TestCase):
