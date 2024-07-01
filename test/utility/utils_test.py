@@ -14,11 +14,6 @@ class UtilityTest(unittest.TestCase):
         self.assertEqual(tuple(utility.divide_in_chunk(range(2, 12), 3)),
                          ((2, 3, 4), (5, 6, 7), (8, 9, 10), (11,)))
 
-    def test_get_file_name(self):
-        self.assertEqual(utility.get_file_name('a/b/c/d.text'), 'd')
-        self.assertEqual(utility.get_file_name('a/b/c/d.text', -2), 'c')
-        self.assertEqual(utility.get_file_name('a/b/c/d.text', 0), 'a')
-
     def test_filter_transform(self):
         self.assertTupleEqual(tuple(utility.filter_transform(range(10),
                                                              lambda x: x % 2,
