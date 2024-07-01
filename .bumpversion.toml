@@ -1,7 +1,8 @@
 [tool.bumpversion]
 current_version = "2.6.0"
 commit = false
-commit_args = "--no-verify"
+# https://graphite.dev/guides/git-commit--no-verify#when-to-use-object-object
+commit_args = "--no-verify --author='Automated-Commit-Though-Bumper <shivkj001@gmail.com>'"
 tag = false
 tag_name = "v{new_version}"
 allow_dirty = true
