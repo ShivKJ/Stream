@@ -17,6 +17,9 @@ test:
 version:
 	bump-my-version bump --allow-dirty --verbose minor --commit --tag
 
+version-patch:
+	bump-my-version bump --allow-dirty --verbose patch --commit --tag
+
 .clean-build: ## remove build artifacts
 	rm -rf build/
 	rm -rf dist/
