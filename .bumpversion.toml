@@ -1,5 +1,5 @@
 [tool.bumpversion]
-current_version = "2.6.1"
+current_version = "2.7.0"
 commit = false
 # https://graphite.dev/guides/git-commit--no-verify#when-to-use-object-object
 commit_args = "--no-verify --author='Automated-Commit-Though-Bumper <shivkj001@gmail.com>'"
