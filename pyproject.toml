@@ -17,9 +17,7 @@ readme = { file = "README.md", content-type = "text/markdown" }
 license = { file = "LICENSE" }
 requires-python = ">= 3.8"
 dynamic = [
-    "dependencies",
     "version",
-    "optional-dependencies",
 ]
 keywords = ["stream", "streamAPI", "fluent"]
 classifiers = [
@@ -33,7 +31,17 @@ classifiers = [
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "decorator>=5.2.1",
+    "psutil>=7.0.0",
+    "python-dateutil>=2.9.0.post0",
+]
+[project.optional-dependencies]
+test = [
+    "pytest>=8.2.2",
+    "pytest-sugar>=1.0.0",
 ]
 
 [tool.setuptools.packages.find]
@@ -47,6 +55,3 @@ Issues = "https://github.com/ShivKJ/Stream/issues"
 
 [tool.setuptools.dynamic]
 version = { attr = "streamAPI.__version__" }
-
-dependencies = { file = ["requirements/requirements.txt"] }
-optional-dependencies.test = { file = ["requirements/test-requirements.txt"] }

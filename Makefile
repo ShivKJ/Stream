@@ -4,21 +4,20 @@
 clean: .clean-build .clean-pyc
 
 build: clean ## builds source and wheel package
-	@python -m build
-	@twine check dist/*
-
+	@uv build
+	@uvx twine check dist/*
 
 upload: ## run tests quickly with the default Python
-	@twine upload -r stream --verbose dist/*
+	@uvx twine upload -r stream --verbose dist/*
 
 test:
-	@tox -p
+	@uvx tox -p
 
 version:
-	bump-my-version bump --allow-dirty --verbose minor --commit --tag
+	@uvx bump-my-version bump --allow-dirty --verbose minor --commit --tag
 
 version-patch:
-	bump-my-version bump --allow-dirty --verbose patch --commit --tag
+	@uvx bump-my-version bump --allow-dirty --verbose patch --commit --tag
 
 .clean-build: ## remove build artifacts
 	rm -rf build/
@@ -26,6 +25,7 @@ version-patch:
 	rm -rf eggs/
 	rm -rf .tox/
 	rm -rf .pytest/
+	rm -rf .venv
 
 	@echo Removing .egg
 	@find . -name '*.egg' -exec rm -f {} +

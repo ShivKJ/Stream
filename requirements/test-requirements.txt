@@ -1,2 +1,0 @@
-pytest>=8.2.2
-pytest-sugar>=1.0.0
