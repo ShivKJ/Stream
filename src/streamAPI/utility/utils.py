@@ -3,150 +3,17 @@ author: Shiv
 email: shivkj001@gmail.com
 """
 
-import json
 from csv import DictReader, reader as ListReader
 from datetime import date, datetime, timedelta
-from functools import partial, singledispatch, wraps
-from logging import getLogger
+from functools import partial, singledispatch
 from operator import itemgetter
-from os import getpid, walk
+from os import walk
 from os.path import abspath, join
-from time import time
 from typing import Callable, Dict, Iterable, List, Tuple, Union
-
-from psutil import Process
 
 from streamAPI.utility.Types import DateTime, Filter, Function, PathGenerator, T, X, Y
 
 NIL = object()
-
-
-# --------------------------- The decorators -----------------------------------
-def execution_time(function=None, *, logger_name: str = None, prefix: str = None, append_runtime=False):
-    """
-    logs time taken to execute a function to file associated with logger_name.
-    if logger_name is None then creates a log file in current dir to log execution time,
-
-    example:
-
-        @execution_time(prefix='my-app')
-        def function(*args,**kwargs):
-            pass
-
-        @execution_time
-        def function(*args,**kwargs):
-            pass
-
-    :param function: wrapping function
-    :param logger_name:
-    :param prefix: to be added before every logging message
-    :param append_runtime: if True then appends time_taken in function output, output must be of type dict,
-                           else runtime will not be appended
-    :return a decorator which will applied on function
-    """
-
-    if logger_name is None:
-        from streamAPI.utility.logger import LOGGER_NAME
-        logger_name = LOGGER_NAME
-
-    def message(m: str) -> str:
-        """
-        adds prefix before the message m if prefix is not None
-        :param m:
-        :return:
-        """
-
-        if prefix is not None:
-            m = prefix + ' : ' + m
-
-        return m
-
-    def _execution_time(func):
-        """
-        A decorator to log execution time of function.
-
-        :param func:
-        :return: wrapping function
-        """
-
-        logger = getLogger(logger_name)
-
-        @wraps(func)
-        def f(*args, **kwargs):
-            start_time = time()
-            output = func(*args, **kwargs)
-            time_taken = time() - start_time
-
-            if append_runtime and isinstance(output, dict):
-                output['time_taken'] = time_taken
-
-            logger.info(message('time taken to execute "%s": %0.3f seconds'),
-                        func.__name__, time_taken)
-
-            return output
-
-        return f
-
-    if function is None:
-        return _execution_time
-
-    return _execution_time(function)
-
-
-def memory_usage(pid=None):
-    """
-    :param pid:
-    :return: finds memory used by "pid" in MB
-    """
-    pid = pid or getpid()
-
-    return Process(pid).memory_info().rss / (1024 ** 2)
-
-
-# -----------------------------------------------------
-
-
-class DB:
-    """
-    This class provide functionality to create connection object.
-    This is helpful in case multiple object is to made for same credential
-
-    The underline database used is postgreSQL.
-    """
-
-    def __init__(self, *, dbname: str,
-                 user: str, password: str,
-                 host: str = 'localhost', port: int = 5432):
-        self.dbname = dbname
-        self.user = user
-        self.password = password
-        self.host = host
-        self.port = port
-
-    @property
-    def dict_conn(self):
-        from psycopg2 import connect
-        from psycopg2.extras import DictConnection
-
-        return connect(**self.__dict__, connection_factory=DictConnection)
-
-    @property
-    def conn(self):
-        from psycopg2 import connect
-        return connect(**self.__dict__)
-
-    @property
-    def url(self) -> Tuple[str, str]:
-        return str(self), self.password
-
-    def __str__(self) -> str:
-        return f'psql -U {self.user} -d {self.dbname} -h {self.host} -p {self.port}'
-
-    def __repr__(self) -> str:
-        return str(self)
-
-
-# -----------------------------------------------------
 
 
 def filter_transform(itr: Iterable[T],
@@ -198,73 +65,6 @@ def _files_inside_dir(dir_name: str,
     for dir_path, _, files in walk(dir_name):
         dir_joiner: Function[str, str] = partial(join, dir_path)
         yield from filter(match, map(dir_joiner, files))
-
-
-def files_inside_dir(dir_name: str,
-                     match: Filter[str] = always_true,
-                     as_type: Callable[[PathGenerator], T] = list,
-                     append_full_path=True) -> T:
-    """
-    recursively finds all files inside dir and in its subdir recursively.
-
-    :param dir_name: top level dir
-    :param match: criteria to select file
-    :param as_type: if None then returns files as Iterator.
-    :param append_full_path: if full path is to be given as output
-    :return: file path generator / sequence
-    """
-    it = _files_inside_dir(dir_name, match=match,
-                           append_full_path=append_full_path)
-
-    return it if as_type is None else as_type(it)
-
-
-def get_file_name(file_name: str, at: int = -1, split: str = '/') -> str:
-    """
-    Extracts fileName from a file.
-
-    Example:
-        get_file_name('/a/b/file_dir/my_file.csv') -> 'my_file'
-        get_file_name('/a/b/file_dir/my_file.csv',at=-2) -> 'file_dir'
-
-    :param file_name:
-    :param at: fetch name after splitting files on "split"
-    :param split:
-
-    :return:
-    """
-
-    return file_name.split(split)[at].split('.')[0]
-
-
-def json_load(file: str):
-    """
-    loads json file.
-
-    :param file:
-    :return: loaded json file as dict/list
-    """
-
-    with open(file) as f:
-        return json.load(f)
-
-
-def json_dump(obj, file: str, indent: int = None, default_cast=None,
-              sort_keys=False, cls=None):
-    """
-    dumps obj in json file.
-    :param obj:
-    :param file:
-    :param indent:
-    :param default_cast:
-    :param sort_keys:
-    :param cls:
-    """
-
-    with open(file, 'w') as f:
-        json.dump(obj, f, indent=indent,
-                  default=default_cast, sort_keys=sort_keys,
-                  cls=cls)
 
 
 def csv_itr(file: str, as_dict=True) -> Iterable[Dict[str, str]]:
@@ -447,11 +247,6 @@ def comparing(func: Function):
     """
 
     return partial(default_comp, func=func)
-
-
-def get_clipboard() -> str:
-    from tkinter import Tk
-    return Tk().clipboard_get()
 
 
 # ------------ importing function defined only in this module-------------
