@@ -1,4 +1,4 @@
-.PHONY: build upload test version
+.PHONY: build upload test version docs
 .DEFAULT_GOAL := build
 
 clean: .clean-build .clean-pyc
@@ -9,6 +9,9 @@ build: clean ## builds source and wheel package
 
 upload: ## run tests quickly with the default Python
 	@uvx twine upload -r stream --verbose dist/*
+
+docs:
+	@uvx --with . pdoc src/streamAPI -o docs
 
 test:
 	@uvx tox -p
