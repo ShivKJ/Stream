@@ -16,6 +16,19 @@ docs:
 test:
 	@uvx tox -p
 
+test-isolation: tox.ini
+	@docker run --rm -it \
+			-v .:/app \
+			ghcr.io/astral-sh/uv:bookworm-slim \
+			sh -c '\
+			mkdir /app-cloned && \
+			cp -a /app/. /app-cloned && \
+			cd /app-cloned && \
+			export PATH=/root/.local/bin:$$PATH && \
+			uv python install 3.8 3.9 3.10 3.12 && \
+			uvx --with . tox -p \
+			'
+
 version:
 	@uvx bump-my-version bump --allow-dirty --verbose minor --commit --tag
 
