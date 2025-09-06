@@ -1,4 +1,4 @@
-.PHONY: build upload test version docs
+.PHONY: build upload test docs test test-in-docker version version-patch
 .DEFAULT_GOAL := build
 
 clean: .clean-build .clean-pyc
@@ -16,18 +16,9 @@ docs:
 test:
 	@uvx tox -p
 
-test-isolation: tox.ini
-	@docker run --rm -it \
-			-v .:/app \
-			ghcr.io/astral-sh/uv:bookworm-slim \
-			sh -c '\
-			mkdir /app-cloned && \
-			cp -a /app/. /app-cloned && \
-			cd /app-cloned && \
-			export PATH=/root/.local/bin:$$PATH && \
-			uv python install 3.8 3.9 3.10 3.12 && \
-			uvx --with . tox -p \
-			'
+test-in-docker:
+	@docker build -t stream-api-test .
+	@docker run --rm -it stream-api-test
 
 version:
 	@uvx bump-my-version bump --allow-dirty --verbose minor --commit --tag

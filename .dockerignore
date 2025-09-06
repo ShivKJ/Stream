@@ -1,0 +1,14 @@
+.idea
+
+.git
+.github
+
+.pytest
+.tox
+
+docs
+
+.bumpversion.toml
+.python-version
+Dockerfile
+
